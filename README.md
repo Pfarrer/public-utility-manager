@@ -100,6 +100,22 @@ Keine exakte Simulation — aber so nah an der Realität wie im sinnvollen Rahme
 Wo Realismus nur Komplexität schafft, ohne Spielentscheidungen zu erzeugen,
 wird vereinfacht.
 
+## Tech-Stack (entschieden)
+
+**SvelteKit + Svelte 5 + Vite + Vitest** — bewusster Versuch eines neuen Stacks
+(für dieses Projekt; bewährte React/TanStack-Muster bleiben als Referenz).
+
+- SvelteKit 2 (file-based routing, `adapter-static` für SPA-artiges Deploy,
+  SSR für das Spiel deaktiviert)
+- Svelte 5 mit Runes (`$state`, `$derived`, `$effect`) statt klassischer Stores
+- Sim-Kern bleibt **framework-freies TypeScript-Modul** (deterministisch,
+  seeded RNG, IDs im GameState, headless testbar) — unchanged vom bewährten
+  Muster
+- Datengetrieben: JSON + zod (Gebäude, Lastprofile, historische Ereignisse)
+- Charts & schematische Karten: custom SVG (kein Chart-Lib-Zwang)
+- Tests: Vitest (`node` für Sim-Kern, `happy-dom`/`jsdom` + Testing Library
+  für UI); `svelte-check` für Typprüfung
+
 ## Offene Fragen (später beantworten)
 
 - [ ] Netzberechnung: vereinfachtes Transportmodell (Kapazität pro Leitung)
