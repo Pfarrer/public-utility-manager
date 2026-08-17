@@ -87,6 +87,13 @@ export function runEconomy(state: GameState, inputs: QuarterInputs = {}): Transa
 		(sum, d) => sum + d.servedKwh,
 		0
 	);
+	// Contract (tram) energy is billed at the contract's tariff share.
+	let priorityKwh = 0;
+	for (const d of Object.values(state.systems.dispatch.current)) {
+		if (d.priorityServedKwh > 0) priorityKwh = d.priorityServedKwh; // single deal region in M1
+	}
+	const contractTariff = state.systems.economy.tariff * state.systems.events.tram.tariffShare;
+	const householdKwh = Math.max(0, servedKwh - priorityKwh);
 	const crew = state.systems.construction.plants.reduce((sum, p) => sum + p.crew, 0);
 
 	const transactions: Transaction[] = [];
@@ -96,7 +103,7 @@ export function runEconomy(state: GameState, inputs: QuarterInputs = {}): Transa
 		transactions.push({ year, quarter, kind, amount: rounded });
 	};
 
-	book('revenue', servedKwh * eco.tariff);
+	book('revenue', householdKwh * eco.tariff + priorityKwh * contractTariff);
 	book('fuel', -(servedKwh * economy.fuelPricePerKwh * crisis));
 	book('wages', -(crew * economy.wagePerCrewQuarter));
 	for (const completion of state.systems.construction.completed) {

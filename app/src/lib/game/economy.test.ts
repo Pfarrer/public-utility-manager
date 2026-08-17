@@ -22,7 +22,8 @@ function dispatchEntry(year: number, quarter: 1 | 2 | 3 | 4, servedKwh: number):
 		servedKwh,
 		unservedKwh: 0,
 		outageHours: 0,
-		blackout: false
+		blackout: false,
+		priorityServedKwh: 0
 	};
 }
 

@@ -2,6 +2,7 @@
 
 import * as v from 'valibot';
 import growthJson from '$lib/data/growth.json';
+import { history, tramActive } from './events';
 import { WEALTH_CATEGORIES, type Province, type WealthCategory } from './province';
 import { province } from './scenario';
 import type { GameState, GrowthState } from './types';
@@ -139,9 +140,14 @@ export function yearlyGrowth(state: GameState, prov: Province = province): void 
 		for (const settlement of region.settlements) {
 			const households = g.households[settlement.id];
 			if (!households) continue;
-			// 1) Household growth, scaled by electrification & satisfaction.
+			// 1) Household growth, scaled by electrification & satisfaction;
+			//    an active tram contract boosts its settlements' growth.
+			const boost =
+				tramActive(state) && history.tramDeal.settlementIds.includes(settlement.id)
+					? history.tramDeal.growthBoost
+					: 1;
 			const additions = Math.floor(
-				householdTotal(households) * growth.householdGrowthBasePerYear * scale
+				householdTotal(households) * growth.householdGrowthBasePerYear * scale * boost
 			);
 			households.poor += additions;
 			// 2) Wealth drift: move driftShare of each category up one level

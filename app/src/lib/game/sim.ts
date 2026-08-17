@@ -3,6 +3,7 @@
 import { advanceQuarter } from './clock';
 import { runDemand, runDispatch } from './dispatch';
 import { economy as economyData, runEconomy } from './economy';
+import { crisisFactor, initEvents, runEvents } from './events';
 import { initGrowth, runGrowth, yearlyGrowth } from './growth';
 import { advanceConstruction } from './plant';
 import type { GameState } from './types';
@@ -26,19 +27,21 @@ export function createInitialState(seed = 0x1890): GameState {
 				transactions: [],
 				annualReports: [],
 				negativeCashQuarters: 0
-			}
+			},
+			events: initEvents()
 		}
 	};
 }
 
 /** Ordered system pipeline — each change hooks its system in here. */
-function runSystems(state: GameState): void {
-	// construction → demand → dispatch → growth → economy
+function runSystems(state: GameState, settled: { year: number; quarter: number }): void {
+	// construction → demand → dispatch → growth → economy → events
 	advanceConstruction(state);
 	runDemand(state);
 	runDispatch(state);
 	runGrowth(state);
-	runEconomy(state);
+	runEconomy(state, { crisisFactor: crisisFactor(settled.year) });
+	runEvents(state, settled);
 }
 
 /**
@@ -50,10 +53,10 @@ function runSystems(state: GameState): void {
 export function tick(state: GameState): GameState {
 	const next = structuredClone(state);
 	// Write the RNG cursor back into the cloned state, exactly as consumed.
-	const settledQuarter = next.clock.quarter;
+	const settled = { ...next.clock };
 	next.clock = advanceQuarter(next.clock);
-	runSystems(next);
+	runSystems(next, settled);
 	// Year boundary: the settled quarter was Q4 → settlements grow & drift.
-	if (settledQuarter === 4) yearlyGrowth(next);
+	if (settled.quarter === 4) yearlyGrowth(next);
 	return next;
 }

@@ -37,6 +37,7 @@ export interface GameState {
 		dispatch: DispatchState;
 		growth: GrowthState;
 		economy: EconomyState;
+		events: EventsState;
 	};
 }
 
@@ -61,6 +62,8 @@ export interface QuarterDispatch {
 	/** Hours of the representative day with any deficit. */
 	outageHours: number;
 	blackout: boolean;
+	/** Priority (contract) energy actually served this quarter (kWh). */
+	priorityServedKwh: number;
 }
 
 export interface DispatchState {
@@ -81,6 +84,51 @@ export interface GrowthState {
 	households: Record<string, WealthSegments>;
 	/** Electrification share per settlement id × wealth category, within [0, 1]. */
 	shares: Record<string, Record<WealthCategory, number>>;
+}
+
+// ---------------------------------------------------------------------------
+// Events (change: add-game-events)
+// ---------------------------------------------------------------------------
+
+/** One logged game message; newspapers collect a year's messages. */
+export interface GameMessage {
+	year: number;
+	quarter: number;
+	text: string;
+}
+
+/** The yearly newspaper: curated headline + the closed year's messages. */
+export interface Newspaper {
+	year: number;
+	headline: string;
+	messages: GameMessage[];
+}
+
+/** Tram deal negotiation phases. */
+export type TramPhase =
+	| 'pending'
+	| 'offered'
+	| 'reoffered'
+	| 'active'
+	| 'rejectedFinal'
+	| 'closed';
+
+export interface TramState {
+	phase: TramPhase;
+	/** Year the current offer belongs to. */
+	offerYear: number;
+	/** Tariff share of the current offer (0.7 initial, 0.8 re-offer; 1 while active is read from phase). */
+	tariffShare: number;
+	/** Year the running contract started (phase 'active'). */
+	contractStartYear: number | null;
+	/** Result of the seeded re-offer roll, decided at first rejection. */
+	reofferGranted: boolean;
+}
+
+export interface EventsState {
+	newspapers: Newspaper[];
+	messages: GameMessage[];
+	tram: TramState;
 }
 
 // ---------------------------------------------------------------------------

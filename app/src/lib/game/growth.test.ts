@@ -85,7 +85,8 @@ describe('runGrowth (quarterly adoption)', () => {
 			servedKwh: 100,
 			unservedKwh: 0,
 			outageHours: 0,
-			blackout: false
+			blackout: false,
+			priorityServedKwh: 0
 		};
 		runGrowth(state);
 		const shares = state.systems.growth.shares['city-hafenstadt'];
@@ -107,7 +108,8 @@ describe('runGrowth (quarterly adoption)', () => {
 				servedKwh: 0,
 				unservedKwh: 100,
 				outageHours: 5,
-				blackout: true
+				blackout: true,
+				priorityServedKwh: 0
 			};
 			runGrowth(state);
 		}

@@ -1,6 +1,7 @@
 /** Supply vs demand — hourly coverage, blackout accounting, satisfaction (change: add-supply-dispatch). */
 
 import { regionDemand } from './demand';
+import { tramLoadForRegion } from './events';
 import { buildings, plantAvailableCapacity } from './plant';
 import type { Province } from './province';
 import { createRng } from './rng';
@@ -32,26 +33,51 @@ export interface DispatchResult {
 	outageHours: number;
 	peakKw: number;
 	blackout: boolean;
+	/** Priority (contract) energy actually served this quarter (kWh). */
+	priorityServedKwh: number;
 }
 
 /**
  * Hourly coverage accounting over the quarter's representative day:
  * served = min(demand, capacity) per hour; the rest is unserved energy.
  * A quarter with any unserved energy is a blackout quarter.
+ * `priorityKw` is served first (contracts); its unserved share weights
+ * double toward dissatisfaction.
  */
-export function dispatchQuarter(curve: number[], capacityKw: number): DispatchResult {
+export function dispatchQuarter(
+	curve: number[],
+	capacityKw: number,
+	priorityKw = 0
+): DispatchResult {
 	let servedKwh = 0;
 	let unservedKwh = 0;
 	let outageHours = 0;
 	let peakKw = 0;
+	let priorityOutageHours = 0;
+	let priorityServedKwh = 0;
 	for (const demand of curve) {
 		if (demand > peakKw) peakKw = demand;
 		const servedHour = Math.min(demand, capacityKw);
 		servedKwh += servedHour;
+		priorityServedKwh += Math.min(priorityKw, servedHour);
 		unservedKwh += demand - servedHour;
-		if (demand > capacityKw) outageHours += 1;
+		if (demand > capacityKw) {
+			outageHours += 1;
+			if (priorityKw > 0) {
+				// Contract energy that could not be served in this hour —
+				// counts double toward dissatisfaction.
+				priorityOutageHours += 1;
+			}
+		}
 	}
-	return { servedKwh, unservedKwh, outageHours, peakKw, blackout: unservedKwh > 0 };
+	return {
+		servedKwh,
+		unservedKwh,
+		outageHours: outageHours + priorityOutageHours, // doubled contract outage hours
+		peakKw,
+		blackout: unservedKwh > 0,
+		priorityServedKwh
+	};
 }
 
 // ---------------------------------------------------------------------------
@@ -92,10 +118,12 @@ export function runDemand(state: GameState, prov: Province = province): void {
 	const g = state.systems.growth;
 	for (const region of prov.regions) {
 		if (!region.unlocked) continue;
-		current[region.id] = regionDemand(region, rng, {
+		const tram = tramLoadForRegion(state, region.id);
+		const curve = regionDemand(region, rng, {
 			households: g.households,
 			shares: g.shares
 		}).curve;
+		current[region.id] = tram > 0 ? curve.map((kw) => kw + tram) : curve;
 	}
 	state.rngState = rng.a >>> 0;
 	state.systems.demand.current = current;
@@ -115,7 +143,8 @@ export function runDispatch(state: GameState, prov: Province = province): void {
 		const capacityKw = state.systems.construction.plants
 			.filter((p) => p.regionId === region.id)
 			.reduce((sum, p) => sum + plantAvailableCapacity(p, buildings), 0);
-		const result = dispatchQuarter(curve, capacityKw);
+		const priorityKw = tramLoadForRegion(state, region.id);
+		const result = dispatchQuarter(curve, capacityKw, priorityKw);
 		const entry: QuarterDispatch = {
 			regionId: region.id,
 			year: state.clock.year,
@@ -125,7 +154,8 @@ export function runDispatch(state: GameState, prov: Province = province): void {
 			servedKwh: result.servedKwh,
 			unservedKwh: result.unservedKwh,
 			outageHours: result.outageHours,
-			blackout: result.blackout
+			blackout: result.blackout,
+			priorityServedKwh: result.priorityServedKwh
 		};
 		dispatch.current[region.id] = entry;
 		dispatch.history.push(entry);

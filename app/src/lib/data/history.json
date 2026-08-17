@@ -1,0 +1,27 @@
+{
+	"headlines": [
+		{ "year": 1890, "text": "Das Zeitalter der Elektrizität bricht an: Techniker versprechen Licht für Stadt und Land" },
+		{ "year": 1891, "text": "Wunder von Lauffen: Drehstrom über 176 Kilometer nach Frankfurt übertragen" },
+		{ "year": 1892, "text": "Pferdebahnen haben ausgedient: Straßenbahnen setzen auf elektrischen Antrieb" },
+		{ "year": 1893, "text": "Unruhe im Kohlebergbau: Streiks und Zollstreit trüben die Aussichten" },
+		{ "year": 1894, "text": "Kohlekrise schlägt durch: Brennstoffpreise steigen spürbar an" },
+		{ "year": 1895, "text": "Kommunale Stromwerke im Aufwind: Provinzen gründen eigene Elektrizitätswerke" },
+		{ "year": 1896, "text": "Laternengas verliert das Rennen: Elektrisches Licht erobert die Straßen" },
+		{ "year": 1897, "text": "Der Elektromotor erobert die Werkhallen: Industrie rüstet um" },
+		{ "year": 1898, "text": "Leitungen aufs Land: Überlandwerke bringen den Strom in die Dörfer" },
+		{ "year": 1899, "text": "Fortschritt ohne Halt: Die Provinz diskutiert das Elektrizitätswerk der Zukunft" },
+		{ "year": 1900, "text": "Jahrhundertwende: Elektrizität gilt als Motor des neuen Jahrhunderts" }
+	],
+	"crisis": { "announceYear": 1893, "startYear": 1894 },
+	"tramDeal": {
+		"regionId": "region-coast",
+		"settlementIds": ["city-hafenstadt"],
+		"offerYear": 1891,
+		"loadKw": 80,
+		"tariffShare": 0.7,
+		"reofferTariffShare": 0.8,
+		"reofferProbability": 0.5,
+		"durationYears": 5,
+		"growthBoost": 1.5
+	}
+}
