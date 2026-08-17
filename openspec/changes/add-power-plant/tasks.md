@@ -1,6 +1,6 @@
 ## 1. Catalog & Entities
 
-- [ ] 1.1 Author `buildings.json` (engine: cost/build-time/staffing/generatorsDriven; generator: capacity/cost/build-time/staffing) + zod schema
+- [ ] 1.1 Author `buildings.json` (engine: cost/build-time/staffing/generatorsDriven; generator: capacity/cost/build-time/staffing) + valibot schema
 - [ ] 1.2 Plant entity types + capacity computation from components
 - [ ] 1.3 Unit tests: capacity from 2×6 config, engine-backed counting
 

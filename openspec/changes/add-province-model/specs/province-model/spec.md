@@ -26,7 +26,7 @@ The model SHALL expose selectors returning total region population, total househ
 - **THEN** totals are population-weighted across settlements and segment sums are 400 / 2300 / 3700
 
 ### Requirement: Scenario data is schema-validated
-Scenario JSON SHALL be validated with zod at load; invalid data SHALL throw a descriptive error naming the offending field.
+Scenario JSON SHALL be validated with valibot at load; invalid data SHALL throw a descriptive error naming the offending field.
 
 #### Scenario: Broken data rejected
 - **WHEN** scenario JSON with a negative population is loaded

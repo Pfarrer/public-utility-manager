@@ -1,7 +1,7 @@
 ## 1. Profile Math & Data
 
 - [ ] 1.1 Implement `demand.ts` profile evaluation (constant + harmonics, non-negative clamp)
-- [ ] 1.2 Author `profiles.json` (household base per wealth, business) + zod schema
+- [ ] 1.2 Author `profiles.json` (household base per wealth, business) + valibot schema
 - [ ] 1.3 Unit tests: non-negativity, morning/evening peaks, wealth ordering
 
 ## 2. Variation & Aggregation

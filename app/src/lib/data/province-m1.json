@@ -1,0 +1,72 @@
+{
+	"name": "Provinz Westmark",
+	"regions": [
+		{
+			"id": "region-coast",
+			"name": "Küstenmark",
+			"terrain": "coast",
+			"unlocked": true,
+			"settlements": [
+				{
+					"id": "city-hafenstadt",
+					"name": "Hafenstadt",
+					"type": "city",
+					"population": 12000,
+					"households": { "wealthy": 400, "average": 2000, "poor": 3000 }
+				},
+				{
+					"id": "village-fischerdorf",
+					"name": "Fischerdorf",
+					"type": "village",
+					"population": 2500,
+					"households": { "wealthy": 0, "average": 300, "poor": 700 }
+				}
+			]
+		},
+		{
+			"id": "region-mountains",
+			"name": "Bergland",
+			"terrain": "mountains",
+			"unlocked": false,
+			"settlements": [
+				{
+					"id": "city-bergstadt",
+					"name": "Bergstadt",
+					"type": "city",
+					"population": 9000,
+					"households": { "wealthy": 250, "average": 1500, "poor": 2200 }
+				}
+			]
+		},
+		{
+			"id": "region-highland",
+			"name": "Hochland",
+			"terrain": "highland",
+			"unlocked": false,
+			"settlements": [
+				{
+					"id": "village-hochlanddorf",
+					"name": "Hochlanddorf",
+					"type": "village",
+					"population": 1800,
+					"households": { "wealthy": 20, "average": 350, "poor": 800 }
+				}
+			]
+		},
+		{
+			"id": "region-farmland",
+			"name": "Ackerland",
+			"terrain": "farmland",
+			"unlocked": false,
+			"settlements": [
+				{
+					"id": "village-ackerdorf",
+					"name": "Ackerdorf",
+					"type": "village",
+					"population": 2100,
+					"households": { "wealthy": 30, "average": 400, "poor": 900 }
+				}
+			]
+		}
+	]
+}

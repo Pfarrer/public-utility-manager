@@ -6,7 +6,7 @@ Vision decision: Fourier-synthesis load curves. Open question (README) recommend
 
 **Goals:**
 - Analytic curves (evaluable at any hour, cheap to sum)
-- Data-driven profile definitions (JSON + zod), balancable without code
+- Data-driven profile definitions (JSON + valibot), balancable without code
 - Peak + energy outputs that dispatch/economy consume
 
 **Non-Goals:**

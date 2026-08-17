@@ -111,7 +111,7 @@ wird vereinfacht.
 - Sim-Kern bleibt **framework-freies TypeScript-Modul** (deterministisch,
   seeded RNG, IDs im GameState, headless testbar) — unchanged vom bewährten
   Muster
-- Datengetrieben: JSON + zod (Gebäude, Lastprofile, historische Ereignisse)
+- Datengetrieben: JSON + valibot (Gebäude, Lastprofile, historische Ereignisse)
 - Charts & schematische Karten: custom SVG (kein Chart-Lib-Zwang)
 - Tests: Vitest (`node` für Sim-Kern, `happy-dom`/`jsdom` + Testing Library
   für UI); `svelte-check` für Typprüfung

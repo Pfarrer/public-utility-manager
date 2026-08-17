@@ -4,7 +4,7 @@ Supply side of M1: one coal-fired plant built from components (steam engines dri
 
 ## What Changes
 
-- Building catalog (JSON + zod): component types (steam engine, generator) with capacity, cost, build time, staffing
+- Building catalog (JSON + valibot): component types (steam engine, generator) with capacity, cost, build time, staffing
 - Plant entity in game state: components with operational status
 - Construction queue: orders complete after 1–2 quarters (per component), costs booked on completion
 - Expansion actions: add engine / add generator to existing plant

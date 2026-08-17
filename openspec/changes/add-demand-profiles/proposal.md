@@ -4,7 +4,7 @@ Electric demand is modeled as harmonic (Fourier-style) load curves per customer 
 
 ## What Changes
 
-- Load profile format: constant base term + k harmonic terms (amplitude, frequency, phase), data-driven JSON + zod
+- Load profile format: constant base term + k harmonic terms (amplitude, frequency, phase), data-driven JSON + valibot
 - Household profiles per wealth category (level scales with wealth)
 - Seeded per-group amplitude/phase jitter within configured bounds
 - Industry/business profile: high base load, work-time peak, lunch dip

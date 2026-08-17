@@ -5,7 +5,7 @@ The game world is a province of four regions (coast, mountains, highland, farmla
 ## What Changes
 
 - Introduce region and settlement types (city/village, population, wealth segments)
-- Static M1 scenario data (JSON + zod): 4 regions, one playable (`unlocked`), 3 locked
+- Static M1 scenario data (JSON + valibot): 4 regions, one playable (`unlocked`), 3 locked
 - Playable region contains 1 city + 1 village with households per wealth category
 - Selector helpers: region population, households by segment, per-settlement stats
 
@@ -16,5 +16,5 @@ The game world is a province of four regions (coast, mountains, highland, farmla
 
 ## Impact
 
-- New modules `app/src/lib/game/province.ts`, `app/src/lib/data/province-m1.json`, zod schema
+- New modules `app/src/lib/game/province.ts`, `app/src/lib/data/province-m1.json`, valibot schema
 - Consumed by demand profiles, growth, UI map

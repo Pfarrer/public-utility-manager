@@ -1,6 +1,6 @@
 ## Context
 
-Vision: player interacts at region level, not per settlement; regions are rectangles with distinct traits. M1 shows all four but plays one. Data-driven buildings/profiles pattern from predecessor: JSON + zod, editable without code changes.
+Vision: player interacts at region level, not per settlement; regions are rectangles with distinct traits. M1 shows all four but plays one. Data-driven buildings/profiles pattern from predecessor: JSON + valibot, editable without code changes.
 
 ## Goals / Non-Goals
 
@@ -18,7 +18,7 @@ Vision: player interacts at region level, not per settlement; regions are rectan
 
 - **Wealth categories fixed to 3** (wealthy / average / poor) per vision; represented as a record keyed by category.
 - **Households, not persons, as demand unit** — demand profiles attach to households; population stays as flavor stat for circle size.
-- **zod schema colocated** with data loader (`app/src/lib/game/scenario.ts`), thrown at load time, fail-fast.
+- **valibot schema colocated** with data loader (`app/src/lib/game/scenario.ts`), thrown at load time, fail-fast.
 
 ## Risks / Trade-offs
 
