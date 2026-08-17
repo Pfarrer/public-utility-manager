@@ -2,6 +2,7 @@
 
 import { advanceQuarter } from './clock';
 import { runDemand, runDispatch } from './dispatch';
+import { economy as economyData, runEconomy } from './economy';
 import { advanceConstruction } from './plant';
 import type { GameState } from './types';
 
@@ -19,7 +20,12 @@ export function createInitialState(seed = 0x1890): GameState {
 			demand: { current: {} },
 			dispatch: { current: {}, history: [], satisfaction: {} },
 			growth: {},
-			economy: {}
+			economy: {
+				tariff: economyData.tariffDefault,
+				transactions: [],
+				annualReports: [],
+				negativeCashQuarters: 0
+			}
 		}
 	};
 }
@@ -30,6 +36,7 @@ function runSystems(state: GameState): void {
 	advanceConstruction(state);
 	runDemand(state);
 	runDispatch(state);
+	runEconomy(state);
 }
 
 /**

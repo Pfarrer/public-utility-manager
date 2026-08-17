@@ -71,8 +71,39 @@ export interface DispatchState {
 }
 /** Placeholder — filled by the add-regional-growth change. */
 export interface GrowthState {}
-/** Placeholder — filled by the add-economy change. */
-export interface EconomyState {}
+
+// ---------------------------------------------------------------------------
+// Economy (change: add-economy)
+// ---------------------------------------------------------------------------
+
+export type TransactionKind = 'revenue' | 'fuel' | 'wages' | 'construction';
+
+export interface Transaction {
+	year: number;
+	quarter: number;
+	kind: TransactionKind;
+	/** Signed amount in EUR: revenue positive, costs negative. */
+	amount: number;
+}
+
+export interface AnnualReport {
+	year: number;
+	/** Signed sum per transaction kind (all kinds present, 0 if unused). */
+	totals: Record<TransactionKind, number>;
+	/** Sum of all transactions of the year — profit (positive) / loss (negative). */
+	net: number;
+}
+
+export interface EconomyState {
+	/** Player tariff in €/kWh (set via `setTariff`, clamped to data bounds). */
+	tariff: number;
+	/** Append-only ledger of all booked transactions. */
+	transactions: Transaction[];
+	/** One report per closed year, appended after the Q4 settlement. */
+	annualReports: AnnualReport[];
+	/** Consecutive quarters with cash < 0; game over at `bankruptcyQuarters`. */
+	negativeCashQuarters: number;
+}
 
 // ---------------------------------------------------------------------------
 // Power plant entities (change: add-power-plant)
