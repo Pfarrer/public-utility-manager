@@ -1,0 +1,12 @@
+schema: spec-driven
+
+context: |
+  Projekt: Public Utility Manager — Aufbau-/Managementspiel (Strom- & Wasserversorgung
+  einer Region mit mehreren Städten; Städte wachsen organisch je nach Spielerentscheidungen).
+
+  Sprache: Deutsch (UI, Docs); Code-Bezeichner Englisch.
+
+  Conventions: Conventional Commits, EUR/MW-Einheiten, de-DE-Formatierung.
+
+  Details zu Tech-Stack und Architektur folgen, sobald der erste Change
+  (Proposal) sie festlegt.
