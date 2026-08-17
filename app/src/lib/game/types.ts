@@ -40,10 +40,35 @@ export interface GameState {
 
 /** Placeholder — filled by the add-power-plant change. */
 export interface ConstructionState {}
-/** Placeholder — filled by the add-demand-profiles change. */
-export interface DemandState {}
-/** Placeholder — filled by the add-supply-dispatch change. */
-export interface DispatchState {}
+/** Per-region demand curves of the current quarter, kWh-sampled hourly in kW. */
+export interface DemandState {
+	current: Record<string, number[]>;
+}
+
+/** One region's dispatch result for a quarter. */
+export interface QuarterDispatch {
+	regionId: string;
+	year: number;
+	quarter: number;
+	/** Available generation (kW) — installed × staffing across the region's plants. */
+	capacityKw: number;
+	/** Demand maximum of the representative day (kW). */
+	peakKw: number;
+	servedKwh: number;
+	unservedKwh: number;
+	/** Hours of the representative day with any deficit. */
+	outageHours: number;
+	blackout: boolean;
+}
+
+export interface DispatchState {
+	/** Most recent quarter's result per region id. */
+	current: Record<string, QuarterDispatch>;
+	/** All past quarters (append-only), oldest first. */
+	history: QuarterDispatch[];
+	/** Customer satisfaction 0–100 per region id. */
+	satisfaction: Record<string, number>;
+}
 /** Placeholder — filled by the add-regional-growth change. */
 export interface GrowthState {}
 /** Placeholder — filled by the add-economy change. */

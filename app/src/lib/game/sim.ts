@@ -1,6 +1,7 @@
 /** Simulation entry point — deterministic quarter tick (change: add-sim-core). */
 
 import { advanceQuarter } from './clock';
+import { runDemand, runDispatch } from './dispatch';
 import { advanceConstruction } from './plant';
 import type { GameState } from './types';
 
@@ -15,8 +16,8 @@ export function createInitialState(seed = 0x1890): GameState {
 		gameOver: false,
 		systems: {
 			construction: { plants: [], completed: [] },
-			demand: {},
-			dispatch: {},
+			demand: { current: {} },
+			dispatch: { current: {}, history: [], satisfaction: {} },
 			growth: {},
 			economy: {}
 		}
@@ -27,6 +28,8 @@ export function createInitialState(seed = 0x1890): GameState {
 function runSystems(state: GameState): void {
 	// construction → demand → dispatch → growth → economy
 	advanceConstruction(state);
+	runDemand(state);
+	runDispatch(state);
 }
 
 /**

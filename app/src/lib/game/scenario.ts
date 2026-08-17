@@ -1,6 +1,7 @@
 /** Scenario loading — valibot-validated, fail-fast (change: add-province-model). */
 
 import * as v from 'valibot';
+import provinceJson from '$lib/data/province-m1.json';
 import type { Province } from './province';
 
 /** Schema mirrors the `Province` type; load-time validation, fail-fast. */
@@ -44,3 +45,6 @@ export function loadScenario(data: unknown): Province {
 	}
 	return result.output;
 }
+
+/** The M1 scenario (loaded once at module init, fail-fast). */
+export const province: Province = loadScenario(provinceJson);
