@@ -41,7 +41,10 @@
 	/** Advance one quarter (manual step and RAF both use this). */
 	export function step(): void {
 		if (game.gameOver) return;
-		game = tickSim(game);
+		// $state holds the GameState as a deep reactive proxy; structuredClone
+		// in tick() cannot serialize proxies (DataCloneError). Detach a plain
+		// snapshot at the boundary — the sim stays pure and framework-free.
+		game = tickSim($state.snapshot(game));
 	}
 
 	/** Read access for tests (and later persistence). */
