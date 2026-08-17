@@ -13,4 +13,4 @@
 ## 3. CI
 
 - [x] 3.1 Add `.github/workflows/ci.yml` (checkout, npm ci, check, test, build; working-directory `app/`)
-- [ ] 3.2 Push branch and confirm CI green
+- [x] 3.2 Push branch and confirm CI green
