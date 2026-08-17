@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { START_CASH } from './constants';
 import economyJson from '$lib/data/economy.json';
 import { createInitialState, tick } from './sim';
 import {
@@ -162,7 +163,7 @@ describe('tick integration', () => {
 		const b = tick(tick(createInitialState()));
 		expect(a).toEqual(b);
 		expect(a.systems.economy.transactions).toHaveLength(0);
-		expect(a.cash).toBe(0);
+		expect(a.cash).toBe(START_CASH); // starting capital, untouched without plants
 	});
 
 	it('settlement with a staffed plant books revenue and wages', async () => {
@@ -185,6 +186,6 @@ describe('tick integration', () => {
 		// revenue + fuel + wages applied to cash
 		const revenue = tx.find((t) => t.kind === 'revenue')?.amount ?? 0;
 		const fuel = tx.find((t) => t.kind === 'fuel')?.amount ?? 0;
-		expect(next.cash).toBeCloseTo(revenue + fuel - 2500, 6);
+		expect(next.cash).toBeCloseTo(START_CASH + revenue + fuel - 2500, 6);
 	});
 });

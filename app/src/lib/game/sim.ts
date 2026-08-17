@@ -1,6 +1,7 @@
 /** Simulation entry point — deterministic quarter tick (change: add-sim-core). */
 
 import { advanceQuarter } from './clock';
+import { START_CASH } from './constants';
 import { runDemand, runDispatch } from './dispatch';
 import { economy as economyData, runEconomy } from './economy';
 import { crisisFactor, initEvents, runEvents } from './events';
@@ -12,7 +13,7 @@ import type { GameState } from './types';
 export function createInitialState(seed = 0x1890): GameState {
 	return {
 		clock: { year: 1890, quarter: 1 },
-		cash: 0,
+		cash: START_CASH,
 		seed,
 		rngState: seed >>> 0,
 		idCounter: 0,
