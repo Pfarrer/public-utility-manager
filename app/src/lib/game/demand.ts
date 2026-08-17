@@ -2,7 +2,7 @@
 
 import * as v from 'valibot';
 import profilesJson from '$lib/data/profiles.json';
-import { WEALTH_CATEGORIES, type Region, type WealthCategory } from './province';
+import { WEALTH_CATEGORIES, type Region, type WealthCategory, type WealthSegments } from './province';
 import { drawFloat, type RngState } from './rng';
 
 // ---------------------------------------------------------------------------
@@ -170,21 +170,32 @@ export function aggregate(curves: number[][]): QuarterDemand {
 
 /**
  * Region demand of the representative day: one group per
- * (settlement × wealth category, households > 0) plus optional businesses.
- * Jitter is drawn per group in deterministic order (settlement, then category).
+ * (settlement × wealth category, connected households > 0) plus optional
+ * businesses. Connected households = living households × electrification
+ * share (growth system). Jitter is drawn per group in deterministic order
+ * (settlement, then category).
  */
 export function regionDemand(
 	region: Region,
 	rng: RngState,
-	options: { businessCount?: number; defs?: Profiles } = {}
+	options: {
+		businessCount?: number;
+		defs?: Profiles;
+		/** Living households per settlement id × category (growth system). */
+		households?: Record<string, WealthSegments>;
+		/** Electrification share per settlement id × category (growth system). */
+		shares?: Record<string, Record<WealthCategory, number>>;
+	} = {}
 ): QuarterDemand {
 	const defs = options.defs ?? profiles;
 	const curves: number[][] = [];
 	for (const settlement of region.settlements) {
 		for (const category of WEALTH_CATEGORIES) {
-			const households = settlement.households[category];
-			if (households <= 0) continue;
-			curves.push(householdGroupCurve(households, category, drawJitter(rng, defs.jitter), defs));
+			const living = options.households?.[settlement.id]?.[category] ?? settlement.households[category];
+			const share = options.shares?.[settlement.id]?.[category] ?? 1;
+			const connected = living * share;
+			if (connected <= 0) continue;
+			curves.push(householdGroupCurve(connected, category, drawJitter(rng, defs.jitter), defs));
 		}
 	}
 	const businessCount = options.businessCount ?? 0;

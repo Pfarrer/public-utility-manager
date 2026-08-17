@@ -3,6 +3,7 @@
 import { advanceQuarter } from './clock';
 import { runDemand, runDispatch } from './dispatch';
 import { economy as economyData, runEconomy } from './economy';
+import { initGrowth, runGrowth, yearlyGrowth } from './growth';
 import { advanceConstruction } from './plant';
 import type { GameState } from './types';
 
@@ -19,7 +20,7 @@ export function createInitialState(seed = 0x1890): GameState {
 			construction: { plants: [], completed: [] },
 			demand: { current: {} },
 			dispatch: { current: {}, history: [], satisfaction: {} },
-			growth: {},
+			growth: initGrowth(),
 			economy: {
 				tariff: economyData.tariffDefault,
 				transactions: [],
@@ -36,6 +37,7 @@ function runSystems(state: GameState): void {
 	advanceConstruction(state);
 	runDemand(state);
 	runDispatch(state);
+	runGrowth(state);
 	runEconomy(state);
 }
 
@@ -48,7 +50,10 @@ function runSystems(state: GameState): void {
 export function tick(state: GameState): GameState {
 	const next = structuredClone(state);
 	// Write the RNG cursor back into the cloned state, exactly as consumed.
+	const settledQuarter = next.clock.quarter;
 	next.clock = advanceQuarter(next.clock);
 	runSystems(next);
+	// Year boundary: the settled quarter was Q4 → settlements grow & drift.
+	if (settledQuarter === 4) yearlyGrowth(next);
 	return next;
 }

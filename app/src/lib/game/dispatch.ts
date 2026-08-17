@@ -81,16 +81,21 @@ export function updateSatisfaction(
 // ---------------------------------------------------------------------------
 
 /**
- * Demand step: compute this quarter's 24h curves for every unlocked region.
- * Consumes the state RNG (group jitter) in deterministic order and writes the
- * advanced cursor back into the state.
+ * Demand step: compute this quarter's 24h curves for every unlocked region
+ * from the *connected* households (living × electrification share, growth
+ * system). Consumes the state RNG (group jitter) in deterministic order and
+ * writes the advanced cursor back into the state.
  */
 export function runDemand(state: GameState, prov: Province = province): void {
 	const rng = createRng(state.rngState);
 	const current: Record<string, number[]> = {};
+	const g = state.systems.growth;
 	for (const region of prov.regions) {
 		if (!region.unlocked) continue;
-		current[region.id] = regionDemand(region, rng).curve;
+		current[region.id] = regionDemand(region, rng, {
+			households: g.households,
+			shares: g.shares
+		}).curve;
 	}
 	state.rngState = rng.a >>> 0;
 	state.systems.demand.current = current;

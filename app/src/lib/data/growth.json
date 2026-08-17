@@ -1,0 +1,9 @@
+{
+	"initialShare": 0.05,
+	"willingnessToPay": { "wealthy": 0.5, "average": 0.3, "poor": 0.15 },
+	"adoptionRatePerQuarter": 0.04,
+	"deadoptionRatePerQuarter": 0.01,
+	"householdGrowthBasePerYear": 0.02,
+	"wealthDriftPerYear": 0.02,
+	"driftSatisfactionThreshold": 80
+}

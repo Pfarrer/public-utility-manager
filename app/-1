@@ -1,0 +1,56 @@
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 2 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m [30m[42m server [49m[39m src/lib/game/growth.test.ts[2m > [22myearlyGrowth[2m > [22mspec: prosperous year increases households and the wealthy+average share
+[31m[1mAssertionError[22m: expected 3950 to be greater than 3950[39m
+[36m [2m❯[22m src/lib/game/growth.test.ts:[2m140:23[22m[39m
+    [90m138|[39m    const totalBefore = before[id].wealthy + before[id].average + befor…
+    [90m139|[39m    const totalAfter = after[id].wealthy + after[id].average + after[id…
+    [90m140|[39m    [34mexpect[39m(totalAfter)[33m.[39m[34mtoBeGreaterThan[39m(totalBefore)[33m;[39m
+    [90m   |[39m                       [31m^[39m
+    [90m141|[39m    [90m// drift moves households up: wealthy+average share increased[39m
+    [90m142|[39m    const upBefore = (before[id].wealthy + before[id].average) / totalB…
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m [30m[42m server [49m[39m src/lib/game/growth.test.ts[2m > [22myearlyGrowth[2m > [22mlow satisfaction: no drift, no household growth
+[31m[1mAssertionError[22m: expected { 'city-hafenstadt': { …(3) }, …(4) } to deeply equal { 'city-hafenstadt': { …(3) }, …(4) }[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[33m@@ -4,21 +4,21 @@[39m
+[2m      "poor": 2200,[22m
+[2m      "wealthy": 250,[22m
+[2m    },[22m
+[2m    "city-hafenstadt": {[22m
+[2m      "average": 2000,[22m
+[32m-     "poor": 3000,[39m
+[31m+     "poor": 3032,[39m
+[2m      "wealthy": 400,[22m
+[2m    },[22m
+[2m    "village-ackerdorf": {[22m
+[2m      "average": 400,[22m
+[2m      "poor": 900,[22m
+[2m      "wealthy": 30,[22m
+[2m    },[22m
+[2m    "village-fischerdorf": {[22m
+[2m      "average": 300,[22m
+[32m-     "poor": 700,[39m
+[31m+     "poor": 706,[39m
+[2m      "wealthy": 0,[22m
+[2m    },[22m
+[2m    "village-hochlanddorf": {[22m
+[2m      "average": 350,[22m
+[2m      "poor": 800,[22m
+
+[36m [2m❯[22m src/lib/game/growth.test.ts:[2m172:43[22m[39m
+    [90m170|[39m   [35mconst[39m before [33m=[39m [34mstructuredClone[39m(state[33m.[39msystems[33m.[39mgrowth[33m.[39mhouseholds)[33m;[39m
+    [90m171|[39m   [34myearlyGrowth[39m(state)[33m;[39m
+    [90m172|[39m   [34mexpect[39m(state[33m.[39msystems[33m.[39mgrowth[33m.[39mhouseholds)[33m.[39m[34mtoEqual[39m(before)[33m;[39m
+    [90m   |[39m                                           [31m^[39m
+    [90m173|[39m  })[33m;[39m
+    [90m174|[39m })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯[22m[39m
+

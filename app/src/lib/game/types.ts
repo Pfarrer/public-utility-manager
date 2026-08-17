@@ -1,5 +1,7 @@
 /** Framework-free simulation core — shared types (change: add-sim-core). */
 
+import type { WealthCategory, WealthSegments } from './province';
+
 /** One tick = one quarter; 4 quarters per year. */
 export interface GameClock {
 	year: number;
@@ -69,8 +71,17 @@ export interface DispatchState {
 	/** Customer satisfaction 0–100 per region id. */
 	satisfaction: Record<string, number>;
 }
-/** Placeholder — filled by the add-regional-growth change. */
-export interface GrowthState {}
+// ---------------------------------------------------------------------------
+// Growth (change: add-regional-growth)
+// ---------------------------------------------------------------------------
+
+/** Living households + electrification shares, owned by the growth system. */
+export interface GrowthState {
+	/** Household counts per settlement id — starts as a copy of the scenario, mutated by yearly growth. */
+	households: Record<string, WealthSegments>;
+	/** Electrification share per settlement id × wealth category, within [0, 1]. */
+	shares: Record<string, Record<WealthCategory, number>>;
+}
 
 // ---------------------------------------------------------------------------
 // Economy (change: add-economy)
