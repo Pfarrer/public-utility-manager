@@ -1,0 +1,200 @@
+/** Component-based power plants — catalog, entities, construction queue, staffing (change: add-power-plant). */
+
+import * as v from 'valibot';
+import buildingsJson from '$lib/data/buildings.json';
+import { nextId, type GameState, type Plant, type PlantComponent } from './types';
+
+// ---------------------------------------------------------------------------
+// Catalog (JSON + valibot, fail-fast)
+// ---------------------------------------------------------------------------
+
+const EngineSchema = v.object({
+	id: v.pipe(v.string(), v.minLength(1)),
+	kind: v.literal('engine'),
+	name: v.pipe(v.string(), v.minLength(1)),
+	cost: v.pipe(v.number(), v.minValue(0)),
+	buildTime: v.pipe(v.number(), v.integer(), v.minValue(1)),
+	staffing: v.pipe(v.number(), v.integer(), v.minValue(0)),
+	/** How many generators one engine of this type can drive. */
+	generatorsDriven: v.pipe(v.number(), v.integer(), v.minValue(1))
+});
+
+const GeneratorSchema = v.object({
+	id: v.pipe(v.string(), v.minLength(1)),
+	kind: v.literal('generator'),
+	name: v.pipe(v.string(), v.minLength(1)),
+	cost: v.pipe(v.number(), v.minValue(0)),
+	buildTime: v.pipe(v.number(), v.integer(), v.minValue(1)),
+	staffing: v.pipe(v.number(), v.integer(), v.minValue(0)),
+	capacityKw: v.pipe(v.number(), v.minValue(0.01))
+});
+
+const CatalogSchema = v.object({
+	components: v.pipe(v.array(v.variant('kind', [EngineSchema, GeneratorSchema])), v.minLength(1))
+});
+
+export type EngineSpec = v.InferOutput<typeof EngineSchema>;
+export type GeneratorSpec = v.InferOutput<typeof GeneratorSchema>;
+
+export interface BuildingCatalog {
+	engines: Map<string, EngineSpec>;
+	generators: Map<string, GeneratorSpec>;
+}
+
+/** Validate and index a building catalog. Throws naming the offending field. */
+export function loadBuildings(data: unknown): BuildingCatalog {
+	const result = v.safeParse(CatalogSchema, data);
+	if (!result.success) {
+		const issue = result.issues[0];
+		const path = issue.path?.map((p) => p.key).join('.') ?? '<root>';
+		throw new Error(`Invalid building catalog at '${path}': ${issue.message}`);
+	}
+	const catalog: BuildingCatalog = { engines: new Map(), generators: new Map() };
+	for (const c of result.output.components) {
+		if (c.kind === 'engine') catalog.engines.set(c.id, c);
+		else catalog.generators.set(c.id, c);
+	}
+	return catalog;
+}
+
+/** The M1 catalog (loaded once at module init, fail-fast). */
+export const buildings: BuildingCatalog = loadBuildings(buildingsJson);
+
+// ---------------------------------------------------------------------------
+// Plant entities & derived values
+// ---------------------------------------------------------------------------
+
+/** Create a plant (empty, no components) inside the state; returns the entity. */
+export function createPlant(state: GameState, regionId: string, name: string): Plant {
+	const plant: Plant = { id: nextId(state), name, regionId, crew: 0, components: [] };
+	state.systems.construction.plants.push(plant);
+	return plant;
+}
+
+function specOf(component: PlantComponent, catalog: BuildingCatalog): EngineSpec | GeneratorSpec {
+	return (
+		catalog.engines.get(component.componentId) ?? catalog.generators.get(component.componentId)!
+	);
+}
+
+/**
+ * Installed capacity: sum of capacities of operational generators that are
+ * backed by an operational engine (each engine drives `generatorsDriven` slots).
+ */
+export function plantInstalledCapacity(plant: Plant, catalog: BuildingCatalog = buildings): number {
+	let slots = 0;
+	for (const c of plant.components) {
+		if (c.status !== 'operational') continue;
+		const spec = catalog.engines.get(c.componentId);
+		if (spec) slots += spec.generatorsDriven;
+	}
+	let capacity = 0;
+	for (const c of plant.components) {
+		if (slots <= 0) break;
+		if (c.status !== 'operational') continue;
+		const spec = catalog.generators.get(c.componentId);
+		if (spec) {
+			capacity += spec.capacityKw;
+			slots -= 1;
+		}
+	}
+	return capacity;
+}
+
+/** Required crew = Σ component staffing (operational + under construction). */
+export function plantRequiredCrew(plant: Plant, catalog: BuildingCatalog = buildings): number {
+	return plant.components.reduce((sum, c) => sum + specOf(c, catalog).staffing, 0);
+}
+
+/** Availability factor from staffing, clamped to [0, 1]. */
+export function staffingFactor(plant: Plant, catalog: BuildingCatalog = buildings): number {
+	const required = plantRequiredCrew(plant, catalog);
+	if (required <= 0) return 1;
+	return Math.min(1, Math.max(0, plant.crew / required));
+}
+
+/** Available capacity = installed × staffing factor. */
+export function plantAvailableCapacity(plant: Plant, catalog: BuildingCatalog = buildings): number {
+	return plantInstalledCapacity(plant, catalog) * staffingFactor(plant, catalog);
+}
+
+// ---------------------------------------------------------------------------
+// Player actions
+// ---------------------------------------------------------------------------
+
+export type OrderResult = { ok: true; orderId: number } | { ok: false; reason: string };
+
+/**
+ * Order a component for an existing plant.
+ * Costs are booked on completion; the order is rejected when current cash
+ * cannot cover all outstanding order costs plus the new one.
+ */
+export function orderComponent(
+	state: GameState,
+	plantId: number,
+	componentId: string,
+	catalog: BuildingCatalog = buildings
+): OrderResult {
+	const spec = catalog.engines.get(componentId) ?? catalog.generators.get(componentId);
+	if (!spec) return { ok: false, reason: `Unknown component '${componentId}'` };
+	const plant = state.systems.construction.plants.find((p) => p.id === plantId);
+	if (!plant) return { ok: false, reason: `Unknown plant ${plantId}` };
+
+	const outstanding = state.systems.construction.plants
+		.flatMap((p) => p.components)
+		.filter((c) => c.status === 'under_construction')
+		.reduce((sum, c) => sum + c.cost, 0);
+	if (state.cash < outstanding + spec.cost) {
+		return { ok: false, reason: 'Insufficient cash for outstanding orders plus this order' };
+	}
+
+	const component: PlantComponent = {
+		id: nextId(state),
+		componentId,
+		status: 'under_construction',
+		remaining: spec.buildTime,
+		cost: spec.cost
+	};
+	plant.components.push(component);
+	return { ok: true, orderId: component.id };
+}
+
+/** Set the plant's crew (player-settable up to the required crew). */
+export function setCrew(
+	state: GameState,
+	plantId: number,
+	crew: number,
+	catalog: BuildingCatalog = buildings
+): void {
+	const plant = state.systems.construction.plants.find((p) => p.id === plantId);
+	if (!plant) throw new Error(`Unknown plant ${plantId}`);
+	plant.crew = Math.min(Math.max(0, Math.round(crew)), plantRequiredCrew(plant, catalog));
+}
+
+// ---------------------------------------------------------------------------
+// Construction system (runs inside the sim tick)
+// ---------------------------------------------------------------------------
+
+/** Advance all construction orders by one quarter; debit cash on delivery. */
+export function advanceConstruction(state: GameState): void {
+	const construction = state.systems.construction;
+	construction.completed = [];
+	for (const plant of construction.plants) {
+		for (const component of plant.components) {
+			if (component.status === 'operational') continue;
+			component.remaining -= 1;
+			if (component.remaining <= 0) {
+				component.status = 'operational';
+				component.remaining = 0;
+				state.cash -= component.cost;
+				construction.completed.push({
+					plantId: plant.id,
+					componentId: component.componentId,
+					cost: component.cost,
+					year: state.clock.year,
+					quarter: state.clock.quarter
+				});
+			}
+		}
+	}
+}

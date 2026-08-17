@@ -49,6 +49,47 @@ export interface GrowthState {}
 /** Placeholder — filled by the add-economy change. */
 export interface EconomyState {}
 
+// ---------------------------------------------------------------------------
+// Power plant entities (change: add-power-plant)
+// ---------------------------------------------------------------------------
+
+export type ComponentStatus = 'under_construction' | 'operational';
+
+export interface PlantComponent {
+	id: number;
+	/** Catalog id of the component spec. */
+	componentId: string;
+	status: ComponentStatus;
+	/** Quarters until operational (counts down each tick). */
+	remaining: number;
+	/** Reference cost booked on completion. */
+	cost: number;
+}
+
+export interface Plant {
+	id: number;
+	name: string;
+	regionId: string;
+	/** Player-set crew (clamped to required crew). */
+	crew: number;
+	components: PlantComponent[];
+}
+
+/** Journal entry for a completed construction order. */
+export interface CompletionRecord {
+	plantId: number;
+	componentId: string;
+	cost: number;
+	year: number;
+	quarter: number;
+}
+
+export interface ConstructionState {
+	plants: Plant[];
+	/** Deliveries of the current tick (cleared before each construction run). */
+	completed: CompletionRecord[];
+}
+
 /** Assign the next entity id from the in-state counter. */
 export function nextId(state: GameState): number {
 	state.idCounter += 1;

@@ -1,6 +1,7 @@
 /** Simulation entry point — deterministic quarter tick (change: add-sim-core). */
 
 import { advanceQuarter } from './clock';
+import { advanceConstruction } from './plant';
 import type { GameState } from './types';
 
 /** Create the initial state for a new game (year 1890, quarter 1, M1 defaults). */
@@ -13,7 +14,7 @@ export function createInitialState(seed = 0x1890): GameState {
 		idCounter: 0,
 		gameOver: false,
 		systems: {
-			construction: {},
+			construction: { plants: [], completed: [] },
 			demand: {},
 			dispatch: {},
 			growth: {},
@@ -22,10 +23,10 @@ export function createInitialState(seed = 0x1890): GameState {
 	};
 }
 
-/** Ordered system pipeline — no-op placeholders until their changes land. */
-function runSystems(_state: GameState): void {
+/** Ordered system pipeline — each change hooks its system in here. */
+function runSystems(state: GameState): void {
 	// construction → demand → dispatch → growth → economy
-	// Each system is added by its own change and mutates the cloned state.
+	advanceConstruction(state);
 }
 
 /**

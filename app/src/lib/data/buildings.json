@@ -1,0 +1,22 @@
+{
+	"components": [
+		{
+			"id": "steam-engine-1890",
+			"kind": "engine",
+			"name": "Kolbendampfmaschine",
+			"cost": 8000,
+			"buildTime": 2,
+			"staffing": 8,
+			"generatorsDriven": 3
+		},
+		{
+			"id": "generator-50kw",
+			"kind": "generator",
+			"name": "Dynamo 50 kW",
+			"cost": 5000,
+			"buildTime": 1,
+			"staffing": 2,
+			"capacityKw": 50
+		}
+	]
+}
