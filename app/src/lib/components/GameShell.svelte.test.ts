@@ -59,23 +59,36 @@ describe('GameShell', () => {
 		expect(screen.getByText(/noch 1 Quartal/)).toBeTruthy();
 	});
 
-	it('year close: newspaper modal opens automatically', async () => {
+	it('year close: badge appears, no modal, no blocking overlay (spec: tune-newspaper-presentation)', async () => {
 		// state after 1890 Q4 was settled: one newspaper exists, unseen
 		const state = atYear(1891);
 		render(GameShell, { initialState: state, autoRun: false });
-		expect(screen.getByTestId('year-close')).toBeTruthy();
-		await fireEvent.click(screen.getByTestId('year-close-open'));
+		expect(screen.queryByTestId('year-close')).toBeFalsy();
+		expect(screen.queryByTestId('newspaper-modal')).toBeFalsy();
+		const notice = screen.getByTestId('newspaper-notice');
+		expect(notice.textContent).toContain('1890');
+		await fireEvent.click(notice);
 		expect(screen.getByTestId('newspaper-modal')).toBeTruthy();
 	});
 
 	it('history list re-opens a past newspaper', async () => {
 		const state = atYear(1891);
 		render(GameShell, { initialState: state, autoRun: false });
-		await fireEvent.click(screen.getByTestId('year-close-open'));
+		await fireEvent.click(screen.getByTestId('newspaper-notice'));
 		await fireEvent.click(screen.getByTestId('newspaper-dismiss'));
 		await fireEvent.click(screen.getByTestId('history-paper-1890'));
 		expect(screen.getByTestId('newspaper-modal')).toBeTruthy();
 		expect(screen.getByText(/Westmark-Kurier/)).toBeTruthy();
+	});
+
+	it('year close without content: no notice, no history entry (spec: tune-newspaper-presentation)', () => {
+		// Fast-forward past a year that produced a paper, then remove all
+		// newspapers/messages to simulate a content-less save: no notice badge.
+		const state = atYear(1891);
+		state.systems.events.newspapers = [];
+		render(GameShell, { initialState: state, autoRun: false });
+		expect(screen.queryByTestId('newspaper-notice')).toBeFalsy();
+		expect(screen.getByText(/Noch keine Zeitung erschienen/)).toBeTruthy();
 	});
 
 	it('game over overlay blocks play and offers restart', async () => {

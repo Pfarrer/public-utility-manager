@@ -23,29 +23,33 @@ describe('GameShell critical paths (real clicks)', () => {
 		expect(screen.getByTestId('clock').textContent).toBe('1890 — Q2');
 	});
 
-	it('clicking through a full year opens the year-close modal with the newspaper', async () => {
+	it('clicking through a full year shows the newspaper badge, not a modal (spec: tune-newspaper-presentation)', async () => {
 		render(GameShell, { autoRun: false });
 		for (let i = 0; i < 4; i++) {
 			await fireEvent.click(screen.getByTestId('step-button'));
 			await tick();
 		}
-		expect(screen.getByTestId('year-close')).toBeTruthy();
-		await fireEvent.click(screen.getByTestId('year-close-open'));
+		// no blocking overlay, no auto-opened modal — just the notice badge
+		expect(screen.queryByTestId('year-close')).toBeFalsy();
+		expect(screen.queryByTestId('newspaper-modal')).toBeFalsy();
+		const notice = screen.getByTestId('newspaper-notice');
+		expect(notice.textContent).toContain('1890');
+		await fireEvent.click(notice);
 		await tick();
 		expect(screen.getByTestId('newspaper-modal')).toBeTruthy();
 	});
 
-	it('newspaper dismiss returns to the game and marks the paper as seen', async () => {
+	it('newspaper dismiss returns to the game and hides the badge', async () => {
 		render(GameShell, { autoRun: false });
 		for (let i = 0; i < 4; i++) {
 			await fireEvent.click(screen.getByTestId('step-button'));
 			await tick();
 		}
-		await fireEvent.click(screen.getByTestId('year-close-open'));
+		await fireEvent.click(screen.getByTestId('newspaper-notice'));
 		await tick();
 		await fireEvent.click(screen.getByTestId('newspaper-dismiss'));
 		await tick();
 		expect(screen.queryByTestId('newspaper-modal')).toBeFalsy();
-		expect(screen.queryByTestId('year-close')).toBeFalsy();
+		expect(screen.queryByTestId('newspaper-notice')).toBeFalsy();
 	});
 });

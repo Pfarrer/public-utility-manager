@@ -33,9 +33,9 @@
 	let openPaper: Newspaper | null = $state(null);
 	let openReport: AnnualReport | null = $state(null);
 
-	const paper = $derived(game.systems.events.newspapers.at(-1) ?? null);
-	const unseenPaper = $derived(
-		game.systems.events.newspapers.length > papersSeen ? paper : null
+	const unseenCount = $derived(game.systems.events.newspapers.length - papersSeen);
+	const latestUnseen = $derived(
+		unseenCount > 0 ? (game.systems.events.newspapers.at(-1) ?? null) : null
 	);
 	const tram = $derived(game.systems.events.tram);
 
@@ -134,6 +134,11 @@
 		{#if tram.phase === 'offered' || tram.phase === 'reoffered'}
 			<span class="badge" data-testid="tram-badge">Angebot der Straßenbahn!</span>
 		{/if}
+		{#if latestUnseen}
+			<button class="badge notice" onclick={() => showPaper(latestUnseen!)} data-testid="newspaper-notice">
+				📰 Zeitung {latestUnseen.year} verfügbar
+			</button>
+		{/if}
 		{#if game.gameOver}<span class="badge bad">insolvent</span>{/if}
 		<button class:active="{speed === 0}" onclick={() => (speed = 0)} data-testid="speed-pause">Pause</button>
 		<button class:active="{speed === 1}" onclick={() => (speed = 1)} data-testid="speed-1">×1</button>
@@ -229,15 +234,6 @@
 
 {#if openPaper}
 	<NewspaperModal newspaper={openPaper} ondismiss={dismissPaper} />
-{:else if unseenPaper}
-	<!-- svelte-ignore a11y_no_static_element_interactions, a11y_click_events_have_key_events -->
-	<div class="yearclose" onclick={() => showPaper(unseenPaper!)} data-testid="year-close">
-		<div class="card" role="button" tabindex="0">
-			<b>Jahr {unseenPaper.year} ist vergangen</b>
-			<p>Die Zeitung ist erschienen.</p>
-			<button onclick={() => showPaper(unseenPaper!)} data-testid="year-close-open">Zeitung lesen</button>
-		</div>
-	</div>
 {/if}
 
 {#if openReport}
@@ -271,10 +267,5 @@
 	.history { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
 	.history li { display: flex; gap: 6px; }
 	.tram { border-color: #b45309; }
-	.yearclose {
-		position: fixed; inset: 0; background: rgba(15, 23, 42, 0.45);
-		display: flex; align-items: center; justify-content: center; z-index: 20;
-	}
-	.card { background: #fff; border-radius: 10px; padding: 18px 24px; text-align: center; }
-	.card p { color: #64748b; font-size: 13px; }
+	.badge.notice { background: #0369a1; font-size: 11px; }
 </style>

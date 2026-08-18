@@ -62,9 +62,33 @@ describe('newspaper', () => {
 	});
 
 	it('runEvents assembles the newspaper when settled quarter is Q4', () => {
-		const state = atYear(1891); // settles 1890 Q4 on the last tick
+		const state = atYear(1891);
 		expect(state.systems.events.newspapers).toHaveLength(1);
 		expect(state.systems.events.newspapers[0].year).toBe(1890);
+	});
+
+	it('spec: year without content — no newspaper is created', () => {
+		// 1890 has a curated headline in real history — view it through a
+		// HistoryData clone without any headline and with no game messages:
+		// runEvents must skip the newspaper entirely (gate test).
+		const noHeadlines = structuredClone(history);
+		noHeadlines.headlines = [];
+		const state = createInitialState();
+		runEvents(state, { year: 1890, quarter: 4 }, noHeadlines);
+		expect(state.systems.events.newspapers).toHaveLength(0);
+	});
+
+	it('spec: messages only — newspaper contains messages and empty headline', () => {
+		const no1890 = structuredClone(history);
+		no1890.headlines = no1890.headlines.filter((h) => h.year !== 1890);
+		const state = createInitialState();
+		pushMessage(state, 'Ein erster Hinweis.');
+		pushMessage(state, 'Ein zweiter Hinweis.');
+		runEvents(state, { year: 1890, quarter: 4 }, no1890);
+		const paper = state.systems.events.newspapers;
+		expect(paper).toHaveLength(1);
+		expect(paper[0].headline).toBe('');
+		expect(paper[0].messages).toHaveLength(2);
 	});
 
 	it('crisis telegraph appears in the 1893 newspaper messages', () => {
