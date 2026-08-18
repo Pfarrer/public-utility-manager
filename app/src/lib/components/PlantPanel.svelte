@@ -102,10 +102,10 @@
 						/ {plantRequiredCrew(plant)}
 					</label>
 					<button onclick={() => order(plant.id, 'steam-engine-1890')} data-testid="order-engine-{plant.id}">
-						+ Maschine (8.000 ¤)
+						+ Maschine (8.000 $)
 					</button>
 					<button onclick={() => order(plant.id, 'generator-50kw')} data-testid="order-generator-{plant.id}">
-						+ Dynamo (5.000 ¤)
+						+ Dynamo (5.000 $)
 					</button>
 				</div>
 			</article>

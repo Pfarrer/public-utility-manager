@@ -50,7 +50,7 @@ export function moneyRound(value: number): number {
 // Player action
 // ---------------------------------------------------------------------------
 
-/** Set the tariff (€/kWh), clamped to the data bounds and rounded to cents. */
+/** Set the tariff ($/kWh), clamped to the data bounds and rounded to cents. */
 export function setTariff(state: GameState, tariff: number): void {
 	const clamped = Math.min(economy.tariffMax, Math.max(economy.tariffMin, tariff));
 	state.systems.economy.tariff = moneyRound(clamped);

@@ -100,7 +100,7 @@
 		const before = game.systems.economy.tariff;
 		setTariff(game, tariffInput);
 		tariffInput = game.systems.economy.tariff;
-		tariffNote = tariffInput !== before ? `Tarif auf ${economy.tariffMin.toFixed(2)}–${economy.tariffMax.toFixed(2)} ¤/kWh begrenzt` : '';
+		tariffNote = tariffInput !== before ? `Tarif auf ${economy.tariffMin.toFixed(2)}–${economy.tariffMax.toFixed(2)} $/kWh begrenzt` : '';
 	}
 
 	// Game loop: RAF accumulator ----------------------------------------------
@@ -129,7 +129,7 @@
 	<header class="topbar">
 		<b>Public Utility Manager</b>
 		<span data-testid="clock">{game.clock.year} — Q{game.clock.quarter}</span>
-		<span data-testid="cash">{game.cash.toLocaleString('de-DE')} ¤</span>
+		<span data-testid="cash">{game.cash.toLocaleString('de-DE')} $</span>
 		<span class="spacer"></span>
 		{#if tram.phase === 'offered' || tram.phase === 'reoffered'}
 			<span class="badge" data-testid="tram-badge">Angebot der Straßenbahn!</span>
@@ -171,7 +171,7 @@
 						onchange={applyTariff}
 						data-testid="tariff-slider"
 					/>
-					<span data-testid="tariff-value">{tariffInput.toFixed(2)} ¤/kWh</span>
+					<span data-testid="tariff-value">{tariffInput.toFixed(2)} $/kWh</span>
 				</label>
 				{#if tariffNote}<p class="note" data-testid="tariff-note">{tariffNote}</p>{/if}
 			</section>

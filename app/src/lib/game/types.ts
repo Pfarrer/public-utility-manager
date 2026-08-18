@@ -154,7 +154,7 @@ export interface AnnualReport {
 }
 
 export interface EconomyState {
-	/** Player tariff in €/kWh (set via `setTariff`, clamped to data bounds). */
+	/** Player tariff in $/kWh (set via `setTariff`, clamped to data bounds). */
 	tariff: number;
 	/** Append-only ledger of all booked transactions. */
 	transactions: Transaction[];
