@@ -25,7 +25,6 @@ function midGameState(): GameState {
 		{ id: 100, componentId: 'steam-engine-1890', status: 'operational', remaining: 0, cost: 8000 },
 		{ id: 101, componentId: 'generator-50kw', status: 'operational', remaining: 0, cost: 5000 }
 	);
-	plant.crew = 10;
 	return tick(tick(base));
 }
 
@@ -45,7 +44,7 @@ describe('persistence', () => {
 			JSON.stringify({ version: SAVE_VERSION - 1, state: createInitialState() })
 		);
 		expect(() => loadGame(storage)).toThrowError(
-			/Save version mismatch: save is v1, build expects v2/
+			new RegExp(`Save version mismatch: save is v${SAVE_VERSION - 1}, build expects v${SAVE_VERSION}`)
 		);
 	});
 

@@ -1,4 +1,4 @@
-/** Component-based power plants — catalog, entities, construction queue, staffing (change: add-power-plant). */
+/** Component-based power plants — catalog, entities, construction queue (change: remove-employee-management). */
 
 import * as v from 'valibot';
 import buildingsJson from '$lib/data/buildings.json';
@@ -14,7 +14,6 @@ const EngineSchema = v.object({
 	name: v.pipe(v.string(), v.minLength(1)),
 	cost: v.pipe(v.number(), v.minValue(0)),
 	buildTime: v.pipe(v.number(), v.integer(), v.minValue(1)),
-	staffing: v.pipe(v.number(), v.integer(), v.minValue(0)),
 	/** How many generators one engine of this type can drive. */
 	generatorsDriven: v.pipe(v.number(), v.integer(), v.minValue(1))
 });
@@ -25,7 +24,6 @@ const GeneratorSchema = v.object({
 	name: v.pipe(v.string(), v.minLength(1)),
 	cost: v.pipe(v.number(), v.minValue(0)),
 	buildTime: v.pipe(v.number(), v.integer(), v.minValue(1)),
-	staffing: v.pipe(v.number(), v.integer(), v.minValue(0)),
 	capacityKw: v.pipe(v.number(), v.minValue(0.01))
 });
 
@@ -66,15 +64,9 @@ export const buildings: BuildingCatalog = loadBuildings(buildingsJson);
 
 /** Create a plant (empty, no components) inside the state; returns the entity. */
 export function createPlant(state: GameState, regionId: string, name: string): Plant {
-	const plant: Plant = { id: nextId(state), name, regionId, crew: 0, components: [] };
+	const plant: Plant = { id: nextId(state), name, regionId, components: [] };
 	state.systems.construction.plants.push(plant);
 	return plant;
-}
-
-function specOf(component: PlantComponent, catalog: BuildingCatalog): EngineSpec | GeneratorSpec {
-	return (
-		catalog.engines.get(component.componentId) ?? catalog.generators.get(component.componentId)!
-	);
 }
 
 /**
@@ -101,21 +93,12 @@ export function plantInstalledCapacity(plant: Plant, catalog: BuildingCatalog = 
 	return capacity;
 }
 
-/** Required crew = Σ component staffing (operational + under construction). */
-export function plantRequiredCrew(plant: Plant, catalog: BuildingCatalog = buildings): number {
-	return plant.components.reduce((sum, c) => sum + specOf(c, catalog).staffing, 0);
-}
-
-/** Availability factor from staffing, clamped to [0, 1]. */
-export function staffingFactor(plant: Plant, catalog: BuildingCatalog = buildings): number {
-	const required = plantRequiredCrew(plant, catalog);
-	if (required <= 0) return 1;
-	return Math.min(1, Math.max(0, plant.crew / required));
-}
-
-/** Available capacity = installed × staffing factor. */
+/**
+ * Available capacity: the installed capacity of operational components —
+ * full staffing implied (change: remove-employee-management).
+ */
 export function plantAvailableCapacity(plant: Plant, catalog: BuildingCatalog = buildings): number {
-	return plantInstalledCapacity(plant, catalog) * staffingFactor(plant, catalog);
+	return plantInstalledCapacity(plant, catalog);
 }
 
 // ---------------------------------------------------------------------------
@@ -157,18 +140,6 @@ export function orderComponent(
 	};
 	plant.components.push(component);
 	return { ok: true, orderId: component.id };
-}
-
-/** Set the plant's crew (player-settable up to the required crew). */
-export function setCrew(
-	state: GameState,
-	plantId: number,
-	crew: number,
-	catalog: BuildingCatalog = buildings
-): void {
-	const plant = state.systems.construction.plants.find((p) => p.id === plantId);
-	if (!plant) throw new Error(`Unknown plant ${plantId}`);
-	plant.crew = Math.min(Math.max(0, Math.round(crew)), plantRequiredCrew(plant, catalog));
 }
 
 // ---------------------------------------------------------------------------

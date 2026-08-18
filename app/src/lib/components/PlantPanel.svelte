@@ -1,15 +1,13 @@
 <script lang="ts">
 	/**
-	 * Plant panel: components, construction queue, staffing, expansion orders.
+	 * Plant panel: components, construction queue, expansion orders.
 	 */
 	import {
 		buildings,
 		createPlant,
 		orderComponent,
 		plantAvailableCapacity,
-		plantInstalledCapacity,
-		plantRequiredCrew,
-		setCrew
+		plantInstalledCapacity
 	} from '$lib/game/plant';
 	import type { GameState } from '$lib/game/types';
 
@@ -55,11 +53,6 @@
 		orderFeedback = result.ok ? '' : result.reason;
 		onaction();
 	}
-
-	function changeCrew(plantId: number, crew: number): void {
-		setCrew(game, plantId, crew);
-		onaction();
-	}
 </script>
 
 <section class="panel" data-testid="plant-panel">
@@ -89,18 +82,6 @@
 					{/each}
 				</ul>
 				<div class="row">
-					<label>
-						Besatzung
-						<input
-							type="number"
-							min="0"
-							max={plantRequiredCrew(plant)}
-							value={plant.crew}
-							onchange={(e) => changeCrew(plant.id, Number(e.currentTarget.value))}
-							data-testid="crew-input-{plant.id}"
-						/>
-						/ {plantRequiredCrew(plant)}
-					</label>
 					<button onclick={() => order(plant.id, 'steam-engine-1890')} data-testid="order-engine-{plant.id}">
 						+ Maschine (8.000 $)
 					</button>
@@ -133,6 +114,5 @@
 	li.op { color: #047857; }
 	li.building { color: #b45309; }
 	.row { display: flex; gap: 8px; align-items: center; margin-top: 6px; flex-wrap: wrap; font-size: 12px; }
-	input { width: 60px; }
 	.error { color: #dc2626; font-size: 12px; }
 </style>

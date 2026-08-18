@@ -53,7 +53,7 @@ export interface QuarterDispatch {
 	regionId: string;
 	year: number;
 	quarter: number;
-	/** Available generation (kW) — installed × staffing across the region's plants. */
+	/** Available generation (kW) — installed capacity across the region's plants. */
 	capacityKw: number;
 	/** Demand maximum of the representative day (kW). */
 	peakKw: number;
@@ -135,7 +135,7 @@ export interface EventsState {
 // Economy (change: add-economy)
 // ---------------------------------------------------------------------------
 
-export type TransactionKind = 'revenue' | 'fuel' | 'wages' | 'construction';
+export type TransactionKind = 'revenue' | 'fuel' | 'construction';
 
 export interface Transaction {
 	year: number;
@@ -185,8 +185,6 @@ export interface Plant {
 	id: number;
 	name: string;
 	regionId: string;
-	/** Player-set crew (clamped to required crew). */
-	crew: number;
 	components: PlantComponent[];
 }
 

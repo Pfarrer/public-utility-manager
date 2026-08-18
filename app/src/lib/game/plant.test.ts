@@ -8,10 +8,7 @@ import {
 	loadBuildings,
 	orderComponent,
 	plantAvailableCapacity,
-	plantInstalledCapacity,
-	plantRequiredCrew,
-	setCrew,
-	staffingFactor
+	plantInstalledCapacity
 } from './plant';
 import type { GameState } from './types';
 
@@ -127,34 +124,13 @@ describe('construction queue', () => {
 	});
 });
 
-describe('staffing', () => {
-	it('required crew sums component staffing (2 engines + 6 generators = 28)', () => {
+describe('capacity without staffing (spec: remove-employee-management)', () => {
+	it('available capacity equals installed capacity (full staffing implied)', () => {
 		const { state, plantId } = stateWithPlant();
 		giveOperational(state, plantId, ENGINE, 2);
 		giveOperational(state, plantId, GENERATOR, 6);
 		const plant = state.systems.construction.plants.find((p) => p.id === plantId)!;
-		expect(plantRequiredCrew(plant)).toBe(2 * 8 + 6 * 2);
-	});
-
-	it('half-staffed plant yields 50% available capacity (spec scenario)', () => {
-		const { state, plantId } = stateWithPlant();
-		giveOperational(state, plantId, ENGINE, 2);
-		giveOperational(state, plantId, GENERATOR, 6);
-		const plant = state.systems.construction.plants.find((p) => p.id === plantId)!;
-		setCrew(state, plantId, plantRequiredCrew(plant) / 2);
-		expect(staffingFactor(plant)).toBeCloseTo(0.5);
-		expect(plantAvailableCapacity(plant)).toBeCloseTo(150);
-	});
-
-	it('setCrew clamps to [0, required]', () => {
-		const { state, plantId } = stateWithPlant();
-		giveOperational(state, plantId, ENGINE, 1);
-		setCrew(state, plantId, 999);
-		let plant = state.systems.construction.plants.find((p) => p.id === plantId)!;
-		expect(plant.crew).toBe(8);
-		setCrew(state, plantId, -5);
-		plant = state.systems.construction.plants.find((p) => p.id === plantId)!;
-		expect(plant.crew).toBe(0);
+		expect(plantAvailableCapacity(plant)).toBeCloseTo(300);
 	});
 
 	it('advanceConstruction is wired into the tick (deterministic replay)', () => {

@@ -40,7 +40,6 @@ describe('economy data', () => {
 	it('loads the M1 balance data', () => {
 		expect(economy.tariffDefault).toBe(0.3);
 		expect(economy.fuelPricePerKwh).toBe(0.08);
-		expect(economy.wagePerCrewQuarter).toBe(250);
 		expect(economy.crisisFuelFactor).toBe(1.5);
 		expect(economy.bankruptcyQuarters).toBe(4);
 	});
@@ -93,15 +92,16 @@ describe('runEconomy', () => {
 		expect(fuel?.amount).toBe(-1440);
 	});
 
-	it('spec: 18 crew at 250 €/quarter → wages -4,500 €', () => {
+	it('no wages are booked without employee management', () => {
 		const state = stateWithQuarter(2);
 		state.systems.construction.plants.push(
-			{ id: 1, name: 'A', regionId: 'region-coast', crew: 10, components: [] },
-			{ id: 2, name: 'B', regionId: 'region-coast', crew: 8, components: [] }
+			{ id: 1, name: 'A', regionId: 'region-coast', components: [] },
+			{ id: 2, name: 'B', regionId: 'region-coast', components: [] }
 		);
 		const tx = runEconomy(state);
-		const wages = tx.find((t) => t.kind === 'wages');
-		expect(wages?.amount).toBe(-4500);
+		// 'wages' no longer exists in TransactionKind — the guard assertion below
+		// verifies no cost positions beyond revenue/fuel/construction appear.
+		expect(tx.every((t) => ['revenue', 'fuel', 'construction'].includes(t.kind))).toBe(true);
 	});
 
 	it('books construction completions as memo transactions (no double debit)', () => {
@@ -112,7 +112,7 @@ describe('runEconomy', () => {
 		];
 		const tx = runEconomy(state);
 		expect(tx.some((t) => t.kind === 'construction' && t.amount === -5000)).toBe(true);
-		// cash only moved by revenue/fuel/wages (12,000 kWh: +3,600 - 960)
+		// cash only moved by revenue/fuel (12,000 kWh: +3,600 - 960)
 		expect(state.cash).toBeCloseTo(before + 3600 - 960, 6);
 	});
 
@@ -123,7 +123,6 @@ describe('runEconomy', () => {
 		expect(report?.year).toBe(1891);
 		expect(report?.totals.revenue).toBe(3600);
 		expect(report?.totals.fuel).toBe(-960);
-		expect(report?.totals.wages).toBe(0);
 		expect(report?.net).toBeCloseTo(2640, 6);
 		expect(buildAnnualReport(state, 1891).net).toBeCloseTo(report?.net ?? NaN, 6);
 	});
@@ -166,7 +165,7 @@ describe('tick integration', () => {
 		expect(a.cash).toBe(START_CASH); // starting capital, untouched without plants
 	});
 
-	it('settlement with a staffed plant books revenue and wages', async () => {
+	it('settlement with an operational plant books revenue and fuel (no wages)', async () => {
 		const { createPlant } = await import('./plant');
 		const state = createInitialState();
 		const plant = createPlant(state, 'region-coast', 'Hafenkraftwerk');
@@ -174,18 +173,16 @@ describe('tick integration', () => {
 			{ id: 100, componentId: 'steam-engine-1890', status: 'operational', remaining: 0, cost: 8000 },
 			{ id: 101, componentId: 'generator-50kw', status: 'operational', remaining: 0, cost: 5000 }
 		);
-		plant.crew = 10; // required = 8 + 2 = 10 → staffing factor 1
 		const next = tick(state);
 		const tx = next.systems.economy.transactions;
 		expect(tx.filter((t) => t.kind === 'revenue')).toHaveLength(1);
-		const wages = tx.find((t) => t.kind === 'wages');
-		expect(wages?.amount).toBe(-2500);
-		// 1 engine → 3 slots, 1 generator → 50 kW available
+		expect(tx.every((t) => ['revenue', 'fuel', 'construction'].includes(t.kind))).toBe(true);
+		// 1 engine → 3 slots, 1 generator → 50 kW available (full staffing implied)
 		const coast = next.systems.dispatch.current['region-coast'];
 		expect(coast?.capacityKw).toBe(50);
-		// revenue + fuel + wages applied to cash
+		// revenue + fuel applied to cash
 		const revenue = tx.find((t) => t.kind === 'revenue')?.amount ?? 0;
 		const fuel = tx.find((t) => t.kind === 'fuel')?.amount ?? 0;
-		expect(next.cash).toBeCloseTo(START_CASH + revenue + fuel - 2500, 6);
+		expect(next.cash).toBeCloseTo(START_CASH + revenue + fuel, 6);
 	});
 });

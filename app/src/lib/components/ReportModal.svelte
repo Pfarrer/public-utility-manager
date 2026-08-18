@@ -11,7 +11,6 @@
 	const KIND_LABELS: Record<string, string> = {
 		revenue: 'Einnahmen',
 		fuel: 'Brennstoff',
-		wages: 'Löhne',
 		construction: 'Bau (Memo)'
 	};
 </script>
