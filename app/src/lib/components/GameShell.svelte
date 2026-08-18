@@ -6,6 +6,7 @@
 	import { tick as tickSim, createInitialState } from '$lib/game/sim';
 	import { decideTram, tramActive } from '$lib/game/events';
 	import { economy, setTariff } from '$lib/game/economy';
+	import { clearSave, saveGame } from '$lib/game/persistence';
 	import type { GameState, Newspaper, AnnualReport } from '$lib/game/types';
 	import ProvinceMap from './ProvinceMap.svelte';
 	import RegionDetail from './RegionDetail.svelte';
@@ -44,7 +45,11 @@
 		// $state holds the GameState as a deep reactive proxy; structuredClone
 		// in tick() cannot serialize proxies (DataCloneError). Detach a plain
 		// snapshot at the boundary — the sim stays pure and framework-free.
+		const settledQuarter = game.clock.quarter;
 		game = tickSim($state.snapshot(game));
+		// Autosave on year close: the settled quarter was a Q4, so the clock
+		// now reads next year Q1 — a clean save boundary (spec: add-persistence).
+		if (settledQuarter === 4) saveGame($state.snapshot(game));
 	}
 
 	/** Read access for tests (and later persistence). */
@@ -76,6 +81,15 @@
 
 	function decide(accept: boolean): void {
 		decideTram(game, accept);
+	}
+
+	// Persistence buttons ------------------------------------------------------
+	function saveNow(): void {
+		saveGame($state.snapshot(game));
+	}
+
+	function wipeSave(): void {
+		clearSave();
 	}
 
 	// Tariff control -----------------------------------------------------------
@@ -125,6 +139,8 @@
 		<button class:active="{speed === 1}" onclick={() => (speed = 1)} data-testid="speed-1">×1</button>
 		<button class:active="{speed === 4}" onclick={() => (speed = 4)} data-testid="speed-4">×4</button>
 		<button onclick={step} disabled={game.gameOver} data-testid="step-button">Quartal abschließen</button>
+		<button onclick={saveNow} data-testid="save-button">Speichern</button>
+		<button onclick={wipeSave} data-testid="clear-save-button">Spielstand löschen</button>
 	</header>
 
 	<main class="grid">

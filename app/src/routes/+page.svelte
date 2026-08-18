@@ -1,5 +1,5 @@
 <script lang="ts">
-	import GameShell from '$lib/components/GameShell.svelte';
+	import AppRoot from '$lib/components/AppRoot.svelte';
 </script>
 
-<GameShell />
+<AppRoot />
