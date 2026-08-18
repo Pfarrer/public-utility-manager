@@ -6,6 +6,7 @@ import { buildings, plantAvailableCapacity } from './plant';
 import type { Province } from './province';
 import { createRng } from './rng';
 import { province } from './scenario';
+import { QUARTER_DAYS } from './constants';
 import type { GameState, QuarterDispatch } from './types';
 
 // ---------------------------------------------------------------------------
@@ -145,17 +146,20 @@ export function runDispatch(state: GameState, prov: Province = province): void {
 			.reduce((sum, p) => sum + plantAvailableCapacity(p, buildings), 0);
 		const priorityKw = tramLoadForRegion(state, region.id);
 		const result = dispatchQuarter(curve, capacityKw, priorityKw);
+		// dispatchQuarter accounts the representative 24-h day; the quarter
+		// bills QUARTER_DAYS of it. Energy fields scale up, power fields
+		// (peak/capacity) and hour counts stay on the day basis.
 		const entry: QuarterDispatch = {
 			regionId: region.id,
 			year: state.clock.year,
 			quarter: state.clock.quarter,
 			capacityKw,
 			peakKw: result.peakKw,
-			servedKwh: result.servedKwh,
-			unservedKwh: result.unservedKwh,
+			servedKwh: result.servedKwh * QUARTER_DAYS,
+			unservedKwh: result.unservedKwh * QUARTER_DAYS,
 			outageHours: result.outageHours,
 			blackout: result.blackout,
-			priorityServedKwh: result.priorityServedKwh
+			priorityServedKwh: result.priorityServedKwh * QUARTER_DAYS
 		};
 		dispatch.current[region.id] = entry;
 		dispatch.history.push(entry);

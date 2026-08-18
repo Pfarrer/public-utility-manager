@@ -51,7 +51,7 @@
 			<div><dt>Spitzenlast vs. Kapazität</dt>
 				<dd>{(dispatch?.peakKw ?? 0).toFixed(0)} / {(dispatch?.capacityKw ?? 0).toFixed(0)} kW</dd></div>
 			<div><dt>Deckungsgrad</dt>
-				<dd>{dispatch && dispatch.peakKw > 0 ? ((dispatch.servedKwh / (dispatch.peakKw * 24)).toFixed(2)) : '–'} </dd></div>
+				<dd>{dispatch && dispatch.peakKw > 0 ? ((dispatch.servedKwh / (dispatch.peakKw * 24 * 91)).toFixed(2)) : '–'} </dd></div>
 		</dl>
 	</section>
 {/if}

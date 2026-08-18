@@ -79,11 +79,12 @@ describe('GameShell', () => {
 	});
 
 	it('game over overlay blocks play and offers restart', async () => {
+		// Balance no longer drives a small staffed plant into bankruptcy within
+		// a few quarters (see QUARTER_DAYS fix) — force the terminal state to
+		// test the overlay/interaction itself.
 		const state = withPlant();
-		state.cash = 0;
-		let s = state;
-		for (let i = 0; i < 6 && !s.gameOver; i++) s = tick(s);
-		render(GameShell, { initialState: s, autoRun: false });
+		state.gameOver = true;
+		render(GameShell, { initialState: state, autoRun: false });
 		expect(screen.getByTestId('gameover-overlay')).toBeTruthy();
 		const stepButton = screen.getByTestId('step-button') as HTMLButtonElement;
 		expect(stepButton.disabled).toBeTruthy();

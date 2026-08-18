@@ -45,7 +45,7 @@ describe('persistence', () => {
 			JSON.stringify({ version: SAVE_VERSION - 1, state: createInitialState() })
 		);
 		expect(() => loadGame(storage)).toThrowError(
-			/Save version mismatch: save is v0, build expects v1/
+			/Save version mismatch: save is v1, build expects v2/
 		);
 	});
 

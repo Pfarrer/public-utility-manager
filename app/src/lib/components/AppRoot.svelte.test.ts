@@ -9,7 +9,7 @@ import { tick } from 'svelte';
 import { describe, expect, it, beforeEach } from 'vitest';
 import AppRoot from './AppRoot.svelte';
 import GameShell from './GameShell.svelte';
-import { clearSave, hasSave, loadGame, SAVE_KEY } from '$lib/game/persistence';
+import { clearSave, hasSave, loadGame, SAVE_KEY, SAVE_VERSION } from '$lib/game/persistence';
 import { createInitialState } from '$lib/game/sim';
 
 describe('persistence UI (real clicks, real localStorage)', () => {
@@ -54,7 +54,7 @@ describe('persistence UI (real clicks, real localStorage)', () => {
 		base.clock = { year: 1892, quarter: 3 };
 		localStorage.setItem(
 			SAVE_KEY,
-			JSON.stringify({ version: 1, state: base })
+			JSON.stringify({ version: SAVE_VERSION, state: base })
 		);
 		render(AppRoot);
 		await tick();
