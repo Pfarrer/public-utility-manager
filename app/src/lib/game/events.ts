@@ -101,9 +101,13 @@ export function headlineFor(year: number, data: HistoryData = history): string {
 }
 
 /** Assemble the newspaper for a closed year: headline + year's messages. */
-export function assembleNewspaper(state: GameState, year: number): Newspaper {
+export function assembleNewspaper(
+	state: GameState,
+	year: number,
+	data: HistoryData = history
+): Newspaper {
 	const messages = state.systems.events.messages.filter((m) => m.year === year);
-	return { year, headline: headlineFor(year), messages };
+	return { year, headline: headlineFor(year, data), messages };
 }
 
 // ---------------------------------------------------------------------------
@@ -161,10 +165,14 @@ export function decideTram(state: GameState, accept: boolean): void {
  * - assembles the newspaper when a year closes (settled Q4), carrying the
  *   crisis telegraph notice in the announce year
  */
-export function runEvents(state: GameState, settled: { year: number; quarter: number }): void {
+export function runEvents(
+	state: GameState,
+	settled: { year: number; quarter: number },
+	data: HistoryData = history
+): void {
 	const events = state.systems.events;
 	const tram = events.tram;
-	const deal = history.tramDeal;
+	const deal = data.tramDeal;
 	const year = state.clock.year;
 
 	// Tram lifecycle
@@ -183,16 +191,23 @@ export function runEvents(state: GameState, settled: { year: number; quarter: nu
 		}
 	}
 
-	// Newspaper when the settled quarter closed the year
+	// Newspaper when the settled quarter closed the year. Only years with
+	// actual content get a paper (spec: tune-newspaper-presentation):
+	// a curated headline or at least one game message of that year.
 	if (settled.quarter === 4) {
-		if (announcesCrisis(settled.year)) {
+		if (announcesCrisis(settled.year, data)) {
 			events.messages.push({
 				year: settled.year,
 				quarter: 4,
 				text: 'Telegraph: Unruhe im Kohlebergbau — höhere Brennstoffpreise zeichnen sich ab.'
 			});
 		}
-		events.newspapers.push(assembleNewspaper(state, settled.year));
+		const hasContent =
+			headlineFor(settled.year, data) !== '' ||
+			events.messages.some((m) => m.year === settled.year);
+		if (hasContent) {
+			events.newspapers.push(assembleNewspaper(state, settled.year, data));
+		}
 	}
 }
 
