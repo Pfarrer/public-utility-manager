@@ -1,0 +1,21 @@
+{
+	"household": {
+		"baseKw": 0.05,
+		"terms": [
+			{ "amplitude": 0.08, "frequency": 1, "phaseHours": 19 },
+			{ "amplitude": 0.06, "frequency": 2, "phaseHours": 19 },
+			{ "amplitude": 0.04, "frequency": 1, "phaseHours": 7 },
+			{ "amplitude": 0.02, "frequency": 1, "phaseHours": 13 }
+		]
+	},
+	"wealthFactor": { "wealthy": 1.6, "average": 1.0, "poor": 0.6 },
+	"business": {
+		"baseKw": 0.6,
+		"terms": [
+			{ "amplitude": 0.6, "frequency": 1, "phaseHours": 12 },
+			{ "amplitude": -0.3, "frequency": 3, "phaseHours": 12.5 }
+		]
+	},
+	"seasonMultiplier": [1.0, 1.0, 1.0, 1.0],
+	"jitter": { "amplitudeBound": 0.1, "phaseBoundHours": 1.0 }
+}

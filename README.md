@@ -30,6 +30,16 @@ Aufbau- und Managementspiel: Strom- und Wasserversorgung einer Region.
   typischer früher Großkunde zahlt direkt in die Stadtentwicklung ein
 - **Krisen reagierbar:** Zeitung kündigt Spannungen/Kostensteigerungen an →
   Spieler kann **Strompreise anpassen**, um das Geschäft profitabel zu halten
+- **Abrechnungs-Evolution als Tech-Ära (M2-Idee):** Historisch wurde in den
+  1880ern nicht nach Verbrauch abgerechnet, sondern **pauschal nach Anzahl
+  installierter Lampen/Motoren**; verbrauchsgenaue Zähler machten die
+  kWh-Abrechnung erst in den 1890ern zum Standard (Arons Uhrzähler 1884,
+  Shallenberger 1888, Thomsons Socket-Meter 1892). Spielbar: Start mit
+  **Pauschaltarif pro Lampe** (planbare Einnahmen, einfacher Einstieg),
+  Tech-Unlock „Verbrauchszähler" (~1892–1895) schaltet die kWh-Abrechnung
+  frei — danach echte Tarif-Mechanik (Margen, Preiselastizität) und der
+  interessante Konflikt: Pauschale = sichere Planung vs. kWh = Margenlogik.
+  M1 bleibt bewusst bei der kWh-Abstraktion (Spielbalance-Grundlage).
 - Zeitliche Progression durch Technologie-Epochen (von ersten Kraftwerken bis
   zum modernen Netz)
 - **Provinz = mehrere nebeneinanderliegende Regionen** (rechteckig), jede mit
@@ -111,7 +121,7 @@ wird vereinfacht.
 - Sim-Kern bleibt **framework-freies TypeScript-Modul** (deterministisch,
   seeded RNG, IDs im GameState, headless testbar) — unchanged vom bewährten
   Muster
-- Datengetrieben: JSON + zod (Gebäude, Lastprofile, historische Ereignisse)
+- Datengetrieben: JSON + valibot (Gebäude, Lastprofile, historische Ereignisse)
 - Charts & schematische Karten: custom SVG (kein Chart-Lib-Zwang)
 - Tests: Vitest (`node` für Sim-Kern, `happy-dom`/`jsdom` + Testing Library
   für UI); `svelte-check` für Typprüfung
