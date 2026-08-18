@@ -16,7 +16,12 @@ export default defineConfig({
 				assets: 'build',
 				fallback: 'index.html',
 				strict: false
-			})
+			}),
+
+			// GitHub Pages project site is served under /public-utility-manager/
+			// (https://pfarrer.github.io/public-utility-manager/) — asset and
+			// navigation URLs must carry that prefix. Applies to dev/preview too.
+			paths: { base: '/public-utility-manager' }
 		})
 	],
 	test: {
