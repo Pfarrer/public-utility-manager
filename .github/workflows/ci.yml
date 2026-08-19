@@ -83,6 +83,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Report combined CI + Pages result
+        working-directory: ${{ github.workspace }}
         run: |
           ci_result="${{ needs.ci.result }}"
           pages_result="${{ needs.pages.result }}"
