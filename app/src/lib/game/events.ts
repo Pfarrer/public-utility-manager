@@ -199,7 +199,7 @@ export function runEvents(
 			events.messages.push({
 				year: settled.year,
 				quarter: 4,
-				text: 'Telegraph: Unruhe im Kohlebergbau — höhere Brennstoffpreise zeichnen sich ab.'
+				text: 'Telegraph: Unruhe im Kohlebergbau. Höhere Brennstoffpreise zeichnen sich ab.'
 			});
 		}
 		const hasContent =
