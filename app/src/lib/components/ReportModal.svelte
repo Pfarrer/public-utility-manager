@@ -1,5 +1,7 @@
 <script lang="ts">
 	/** Annual report modal: transaction totals per kind + net for the year. */
+	import { money } from '$lib/ui/format';
+
 	let {
 		report,
 		ondismiss
@@ -24,12 +26,12 @@
 			{#each Object.entries(report.totals) as [kind, total] (kind)}
 				<tr>
 					<td>{KIND_LABELS[kind] ?? kind}</td>
-					<td class:neg={total < 0}>{total.toLocaleString('de-DE') + ' $'}</td>
+					<td class:neg={total < 0}>{money(total)}</td>
 				</tr>
 			{/each}
 			<tr class="net">
 				<td>Jahresergebnis</td>
-				<td class:neg={report.net < 0}>{report.net.toLocaleString('de-DE') + ' $'}</td>
+				<td class:neg={report.net < 0}>{money(report.net)}</td>
 			</tr>
 			</tbody>
 		</table>

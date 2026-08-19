@@ -68,12 +68,12 @@
 				<header>
 					<b>{plant.name}</b>
 					<span class="muted">
-						{plantInstalledCapacity(plant).toFixed(0)} kW installiert ·
-						{plantAvailableCapacity(plant).toFixed(0)} kW verfügbar
+						{plantInstalledCapacity(plant).toFixed(0)}&nbsp;kW installiert ·
+						{plantAvailableCapacity(plant).toFixed(0)}&nbsp;kW verfügbar
 					</span>
 				</header>
 				<p class="muted" data-testid="staff-line-{plant.id}">
-					Belegschaft: {plantRequiredCrew(plant)} Arbeiter (automatisch)
+					Belegschaft: {plantRequiredCrew(plant)}&nbsp;Arbeiter (automatisch)
 				</p>
 				<ul>
 					{#each plant.components as c (c.id)}
@@ -87,10 +87,10 @@
 				</ul>
 				<div class="row">
 					<button onclick={() => order(plant.id, 'steam-engine-1890')} data-testid="order-engine-{plant.id}">
-						+ Maschine (8.000 $)
+						+ Maschine (8.000&nbsp;$)
 					</button>
 					<button onclick={() => order(plant.id, 'generator-50kw')} data-testid="order-generator-{plant.id}">
-						+ Dynamo (5.000 $)
+						+ Dynamo (5.000&nbsp;$)
 					</button>
 				</div>
 			</article>
@@ -118,5 +118,6 @@
 	li.op { color: #047857; }
 	li.building { color: #b45309; }
 	.row { display: flex; gap: 8px; align-items: center; margin-top: 6px; flex-wrap: wrap; font-size: 12px; }
+	.row button { white-space: nowrap; }
 	.error { color: #dc2626; font-size: 12px; }
 </style>
