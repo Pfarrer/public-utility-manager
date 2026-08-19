@@ -21,4 +21,4 @@
 - [x] 4.1 `npm run check` 0 errors, `npm test` green, `npm run build` succeeds
 - [x] 4.2 Browser spot-check: read-only staff display, no input; quarter close books wages; annual report shows the Löhne row
 - [x] 4.3 Tick tasks.md, commit on `spec/remove-employee-management`, push (PR #3 updates)
-- [ ] 4.4 After merge: `openspec archive remove-employee-management -y`, sweep stale Purpose mentions of player-set staffing, `validate --specs --strict`, commit
+- [x] 4.4 After merge: `openspec archive remove-employee-management -y`, sweep stale Purpose mentions of player-set staffing, `validate --specs --strict`, commit

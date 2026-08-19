@@ -27,11 +27,19 @@ The region detail SHALL include a 24-hour demand line chart and a horizontal cap
 - **THEN** those hours are marked (e.g. red segments) in the chart
 
 ### Requirement: Player controls work
-The UI SHALL provide: tariff adjustment (slider with €/kWh), staffing level input, and expansion orders (engine/generator) that call the respective game actions with validation feedback.
+The UI SHALL provide: tariff adjustment (slider with $/kWh) and expansion orders (engine/generator) that call the corresponding sim functions; the UI SHALL NOT provide any staffing controls, and the derived staff count SHALL be shown read-only.
 
 #### Scenario: Tariff change
-- **WHEN** the player moves the tariff slider to 0.40 €/kWh
-- **THEN** the state tariff is 0.40 and next quarter's revenue uses it
+- **WHEN** the player moves the tariff slider and releases it
+- **THEN** the sim's tariff is set accordingly
+
+#### Scenario: No staffing controls
+- **WHEN** the player opens the plant panel
+- **THEN** only tariff and expansion orders exist and no crew input exists
+
+#### Scenario: Crew count visible
+- **WHEN** the plant has operational components requiring 10 crew
+- **THEN** the panel shows the derived staff count (10) without an input
 
 ### Requirement: Newspaper and report on year close
 At a year close with a newspaper the UI SHALL surface it as a non-blocking notice (e.g. a badge with the unseen count); the game loop SHALL continue without requiring any interaction with the notice. Activating the notice SHALL open the newspaper modal, which SHALL be dismissable. The annual report SHALL be offered via the history list. The UI SHALL NOT auto-open the newspaper modal and SHALL NOT show a blocking year-close overlay.
