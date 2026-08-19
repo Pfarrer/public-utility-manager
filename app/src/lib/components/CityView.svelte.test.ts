@@ -7,6 +7,8 @@ import { describe, expect, it } from 'vitest';
 import CityView from './CityView.svelte';
 import { createInitialState } from '$lib/game/sim';
 import { createPlant } from '$lib/game/plant';
+import { ringCentroid } from '$lib/game/geometry';
+import provinceM1 from '$lib/data/province-m1.json';
 import type { GameState } from '$lib/game/types';
 
 /** Build a state with an operational plant in the coast region. */
@@ -111,6 +113,45 @@ describe('CityView', () => {
 		});
 		const { container: c2 } = render(CityView, { game: game2, regionId: 'region-coast' });
 		expect(c2.querySelector('.flow')).toBeNull();
+	});
+
+	it('lights the village from the regional grid without its own plant', () => {
+		// The plant is hash-assigned to ONE settlement; the other must still
+		// light up (region grid) and get a distribution line (spec: village
+		// lights from the regional grid).
+		const game = withPlant();
+		const { container } = render(CityView, { game, regionId: 'region-coast' });
+		const city = screen.getByTestId('city-settlement-city-hafenstadt');
+		const village = screen.getByTestId('city-settlement-village-fischerdorf');
+		// initial share 0.05 → glow > 0 for BOTH settlements
+		expect(Number(city.getAttribute('data-glow'))).toBeGreaterThan(0);
+		expect(Number(village.getAttribute('data-glow'))).toBeGreaterThan(0);
+		// distribution line reaches the village
+		expect(container.querySelector('[data-testid="grid-flow-village-fischerdorf"]')).toBeTruthy();
+		expect(container.querySelector('[data-testid="grid-flow-city-hafenstadt"]')).toBeTruthy();
+	});
+
+	it('keeps every polygon grey while no plant in the region runs', () => {
+		const game = createInitialState(); // no plants at all
+		const { container } = render(CityView, { game, regionId: 'region-coast' });
+		expect(container.querySelector('.illumination')).toBeNull();
+		expect(container.querySelector('.flow')).toBeNull();
+	});
+
+	it('centres the glow on the settlement centroid, not the plant anchor', () => {
+		const game = withPlant();
+		render(CityView, { game, regionId: 'region-coast' });
+		const settle = screen.getByTestId('city-settlement-city-hafenstadt');
+		const glowCircle = settle.querySelector('.illumination circle');
+		expect(glowCircle).toBeTruthy();
+		// expected centroid from the live scenario geometry
+		const hafenstadt = provinceM1.regions[0].settlements.find(
+			(s) => s.id === 'city-hafenstadt'
+		);
+		const ring = hafenstadt?.geometry.stages[0].ring ?? '';
+		const centroid = ringCentroid(ring);
+		expect(Number(glowCircle?.getAttribute('cx'))).toBeCloseTo(centroid.x, 3);
+		expect(Number(glowCircle?.getAttribute('cy'))).toBeCloseTo(centroid.y, 3);
 	});
 });
 
