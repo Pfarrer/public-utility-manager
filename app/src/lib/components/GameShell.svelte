@@ -7,6 +7,7 @@
 	import { decideTram, tramActive } from '$lib/game/events';
 	import { economy, setTariff } from '$lib/game/economy';
 	import { clearSave, saveGame } from '$lib/game/persistence';
+	import { money } from '$lib/ui/format';
 	import type { GameState, Newspaper, AnnualReport } from '$lib/game/types';
 	import ProvinceMap from './ProvinceMap.svelte';
 	import RegionDetail from './RegionDetail.svelte';
@@ -100,7 +101,7 @@
 		const before = game.systems.economy.tariff;
 		setTariff(game, tariffInput);
 		tariffInput = game.systems.economy.tariff;
-		tariffNote = tariffInput !== before ? `Tarif auf ${economy.tariffMin.toFixed(2)}–${economy.tariffMax.toFixed(2)} $/kWh begrenzt` : '';
+		tariffNote = tariffInput !== before ? `Tarif auf ${economy.tariffMin.toFixed(2)}–${economy.tariffMax.toFixed(2)}\u00A0$/kWh begrenzt` : '';
 	}
 
 	// Game loop: RAF accumulator ----------------------------------------------
@@ -129,7 +130,7 @@
 	<header class="topbar">
 		<b>Public Utility Manager</b>
 		<span data-testid="clock">{game.clock.year} — Q{game.clock.quarter}</span>
-		<span data-testid="cash">{game.cash.toLocaleString('de-DE')} $</span>
+		<span data-testid="cash">{money(game.cash)}</span>
 		<span class="spacer"></span>
 		{#if tram.phase === 'offered' || tram.phase === 'reoffered'}
 			<span class="badge" data-testid="tram-badge">Angebot der Straßenbahn!</span>
@@ -176,7 +177,7 @@
 						onchange={applyTariff}
 						data-testid="tariff-slider"
 					/>
-					<span data-testid="tariff-value">{tariffInput.toFixed(2)} $/kWh</span>
+					<span data-testid="tariff-value">{tariffInput.toFixed(2)}&nbsp;$/kWh</span>
 				</label>
 				{#if tariffNote}<p class="note" data-testid="tariff-note">{tariffNote}</p>{/if}
 			</section>
@@ -251,9 +252,9 @@
 		border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; margin-bottom: 12px;
 	}
 	.spacer { flex: 1; }
-	.badge { background: #b45309; color: #fff; border-radius: 10px; padding: 2px 8px; font-size: 11px; }
+	.badge { background: #b45309; color: #fff; border-radius: 10px; padding: 2px 8px; font-size: 11px; white-space: nowrap; }
 	.badge.bad { background: #dc2626; }
-	button { font-size: 12px; padding: 4px 10px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; cursor: pointer; }
+	button { font-size: 12px; padding: 4px 10px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; cursor: pointer; white-space: nowrap; }
 	button.active { background: #0369a1; color: #fff; border-color: #0369a1; }
 	button:disabled { opacity: 0.5; cursor: not-allowed; }
 	.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }

@@ -37,6 +37,17 @@ describe('GameShell', () => {
 		expect(screen.getByTestId('step-button')).toBeTruthy();
 	});
 
+	it('binds cash amount and $ with a non-breaking space', () => {
+		render(GameShell, { autoRun: false });
+		expect(screen.getByTestId('cash').textContent).toContain('50.000\u00A0$');
+		expect(screen.getByTestId('cash').textContent).not.toContain(' $');
+	});
+
+	it('binds tariff value and $/kWh with a non-breaking space', () => {
+		render(GameShell, { autoRun: false });
+		expect(screen.getByTestId('tariff-value').textContent).toContain('0.30\u00A0$/kWh');
+	});
+
 	it('tariff change: slider to 0.40 updates state tariff', async () => {
 		const rendered = render(GameShell, { autoRun: false });
 		const exposed = rendered.component as unknown as ShellExposed;

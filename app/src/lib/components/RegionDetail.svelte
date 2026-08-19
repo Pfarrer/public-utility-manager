@@ -46,10 +46,10 @@
 		<h3>{region.name}</h3>
 		<dl>
 			<div><dt>Haushalte (reich/bürgerlich/arm)</dt><dd>{households.wealthy} / {households.average} / {households.poor}</dd></div>
-			<div><dt>Elektrifizierung</dt><dd>{(electrification * 100).toFixed(1)} %</dd></div>
+			<div><dt>Elektrifizierung</dt><dd>{(electrification * 100).toFixed(1)}&nbsp;%</dd></div>
 			<div><dt>Zufriedenheit</dt><dd>{satisfaction.toFixed(0)} / 100</dd></div>
 			<div><dt>Spitzenlast vs. Kapazität</dt>
-				<dd>{(dispatch?.peakKw ?? 0).toFixed(0)} / {(dispatch?.capacityKw ?? 0).toFixed(0)} kW</dd></div>
+				<dd>{(dispatch?.peakKw ?? 0).toFixed(0)}&nbsp;/&nbsp;{(dispatch?.capacityKw ?? 0).toFixed(0)}&nbsp;kW</dd></div>
 			<div><dt>Deckungsgrad</dt>
 				<dd>{dispatch && dispatch.peakKw > 0 ? ((dispatch.servedKwh / (dispatch.peakKw * 24 * 91)).toFixed(2)) : '–'} </dd></div>
 		</dl>
