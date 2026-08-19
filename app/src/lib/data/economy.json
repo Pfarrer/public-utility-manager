@@ -3,6 +3,7 @@
 	"tariffMin": 0.1,
 	"tariffMax": 0.6,
 	"fuelPricePerKwh": 0.08,
+	"wagePerCrewQuarter": 250,
 	"crisisFuelFactor": 1.5,
 	"bankruptcyQuarters": 4
 }

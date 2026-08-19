@@ -3,12 +3,16 @@
 ## MODIFIED Requirements
 
 ### Requirement: Player controls work
-The UI SHALL provide: tariff adjustment (slider with €/kWh) and expansion orders (engine/generator) that call the respective game actions with validation feedback. The UI SHALL NOT offer staffing controls.
+The UI SHALL provide: tariff adjustment (slider with €/kWh) and expansion orders (engine/generator) that call the corresponding sim functions; the UI SHALL NOT provide any staffing controls, and the derived staff count SHALL be shown read-only.
 
 #### Scenario: Tariff change
-- **WHEN** the player moves the tariff slider to 0.40 €/kWh
-- **THEN** the state tariff is 0.40 and next quarter's revenue uses it
+- **WHEN** the player moves the tariff slider and releases it
+- **THEN** the sim's tariff is set accordingly
 
 #### Scenario: No staffing controls
-- **WHEN** the player opens the plant panel of a built plant
-- **THEN** no crew input is offered and capacity is shown as the installed capacity
+- **WHEN** the player opens the plant panel
+- **THEN** only tariff and expansion orders exist and no crew input exists
+
+#### Scenario: Crew count visible
+- **WHEN** the plant has operational components requiring 10 crew
+- **THEN** the panel shows the derived staff count (10) without an input

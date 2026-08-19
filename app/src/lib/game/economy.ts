@@ -2,6 +2,7 @@
 
 import * as v from 'valibot';
 import economyJson from '$lib/data/economy.json';
+import { plantRequiredCrew } from './plant';
 import type { AnnualReport, GameState, Transaction, TransactionKind } from './types';
 
 // ---------------------------------------------------------------------------
@@ -13,6 +14,8 @@ const EconomySchema = v.object({
 	tariffMin: v.pipe(v.number(), v.minValue(0.01)),
 	tariffMax: v.pipe(v.number(), v.minValue(0.01)),
 	fuelPricePerKwh: v.pipe(v.number(), v.minValue(0.01)),
+	/** Crew wage per quarter — staffing is derived, wages follow the fleet. */
+	wagePerCrewQuarter: v.pipe(v.number(), v.minValue(0)),
 	crisisFuelFactor: v.pipe(v.number(), v.minValue(1)),
 	bankruptcyQuarters: v.pipe(v.number(), v.integer(), v.minValue(1))
 });
@@ -102,6 +105,13 @@ export function runEconomy(state: GameState, inputs: QuarterInputs = {}): Transa
 
 	book('revenue', householdKwh * eco.tariff + priorityKwh * contractTariff);
 	book('fuel', -(servedKwh * economy.fuelPricePerKwh * crisis));
+	// Wages from the derived staff: Σ staffing of operational components across
+	// all plants — workers are hired/dismissed implicitly as the fleet changes.
+	const staff = state.systems.construction.plants.reduce(
+		(sum, p) => sum + plantRequiredCrew(p),
+		0
+	);
+	book('wages', -(staff * economy.wagePerCrewQuarter));
 	for (const completion of state.systems.construction.completed) {
 		book('construction', -completion.cost);
 	}
@@ -126,6 +136,7 @@ export function buildAnnualReport(state: GameState, year: number): AnnualReport 
 	const totals: Record<TransactionKind, number> = {
 		revenue: 0,
 		fuel: 0,
+		wages: 0,
 		construction: 0
 	};
 	let net = 0;

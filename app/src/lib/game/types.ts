@@ -135,7 +135,7 @@ export interface EventsState {
 // Economy (change: add-economy)
 // ---------------------------------------------------------------------------
 
-export type TransactionKind = 'revenue' | 'fuel' | 'construction';
+export type TransactionKind = 'revenue' | 'fuel' | 'wages' | 'construction';
 
 export interface Transaction {
 	year: number;

@@ -1,25 +1,26 @@
 # Design: remove-employee-management
 
 ## Context
-Crew/staffing is interwoven with the sim core: `Plant.crew` in `types.ts`, `plantRequiredCrew`/`staffingFactor`/`setCrew` in `plant.ts` (available capacity = installed × staffing factor, also used by `dispatch.ts` via `plantAvailableCapacity`), the wages booking in `economy.ts` (+`wagePerCrewQuarter` in economy.json), the Besatzung input in `PlantPanel.svelte`, `wages` in `TransactionKind` and `ReportModal`, and the staffing value in `buildings.json`.
+Crew/staffing is interwoven with the sim core: `Plant.crew` in `types.ts`, `plantRequiredCrew`/`staffingFactor`/`setCrew` in `plant.ts`, the wages booking in `economy.ts`, and the Besatzung input in `PlantPanel.svelte`. User decision: manual crew management adds nothing to the grid simulation — workers and wages stay in the simulation, but staffing becomes a **derived** quantity that follows operational needs (implicit hiring/dismissal).
 
 ## Goals
-- Grid-relevant behavior stays intact: capacity, construction lead times, dispatch, revenue, fuel costs, satisfaction, growth, events.
-- No dead data or dead code left behind (`staffing`, `crew`, `wagePerCrewQuarter`, `wages` kinds fully removed).
-- Old saves rejected cleanly (SAVE_VERSION 3, established no-migration pattern).
+- Zero player interaction for staffing: no crew input, no `setCrew` call path.
+- Workers remain visible: staff = Σ staffing of operational components (constructing components hire nobody).
+- Wages remain a real quarterly cost position: derivedStaff × wagePerCrewQuarter.
+- Available capacity = installed capacity (implicit full staffing, no understaffing states).
+- Old saves with player-set `crew` are rejected.
 
 ## Non-Goals
-- Re-tuning the economy balance after removing wages (accepted shift; can follow as its own change).
-- Touching water/other utilities or any M2 scope.
+- Hiring/firing lag, morale, training or any employee-level simulation depth.
+- Balance retuning (payroll magnitude is unchanged for a fully-staffed fleet).
 
 ## Decisions
-- **D1 — Capacity without staffing:** `plantAvailableCapacity` = installed capacity of operational components (factor 1). Keep the function as the single capacity source used by dispatch; rename not needed.
-- **D2 — Wages removal keeps `TransactionKind` minimal:** delete `'wages'` from the union and from the report totals initialization in `economy.ts`; `ReportModal` label map drops the entry. Existing reports in old saves become incompatible → covered by SAVE_VERSION bump.
-- **D3 — SAVE_VERSION 3** (no migration, same pattern as v2): old saves are rejected with the established version-guard error.
-- **D4 — Data cleanup:** remove `staffing` from `buildings.json` and `wagePerCrewQuarter` from `economy.json`; remove the valibot fields from the schemas in `plant.ts`/`economy.ts`. (Note: this is a **breaking data change** — the fail-fast loaders throw on old files, which is intended.)
-- **D5 — UI:** PlantPanel drops the Besatzung row (slider + label) and `changeCrew`; capacity display shows installed capacity. No replacement control.
+- **D1 — Derivation, not management:** `plantRequiredCrew` survives as the derived-demand function (operational components only) and is re-exported; it feeds both the read-only UI display and the wage bill. `staffingFactor`/`setCrew`/`Plant.crew` are deleted.
+- **D2 — Wages from derived staff:** economy books `wages = Σ plantRequiredCrew(operational) × wagePerCrewQuarter`; `wagePerCrewQuarter` (250) stays in economy.json; `staffing` stays in buildings.json (meaning: crew demand per component). Since plants are implicitly fully staffed, a fully-staffed fleet's payroll is identical to before.
+- **D3 — Save format:** SAVE_VERSION 2 → 3, no migration (established pattern); the version guard rejects old saves.
+- **D4 — UI:** PlantPanel shows the derived staff count read-only ("Belegschaft (automatisch): N"); ReportModal keeps the Löhne row.
 
 ## Risks / Trade-offs
-- Wages were a recurring cost (~4,500 €/quarter in the spec payroll scenario); removing them makes profitable operation easier. Deliberately out of scope (see Non-Goals); balance change stays visible in the annual report's remaining positions.
-- Test sweep is large (plant/economy/dispatch/events/persistence tests reference `crew`/`wages`), but mechanical.
-- Save compatibility breaks again (v2→v3) shortly after v2 — accepted, game is in development, no shipped players.
+- Players can no longer understaff to save wages at a capacity penalty — wages now always follow the operational fleet.
+- MODIFIED Requirements must carry over all existing scenario names (validator rule) — staffing scenarios renamed in place.
+- Available capacity no longer drops from staffing; only construction lead time limits growth.

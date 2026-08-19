@@ -14,6 +14,8 @@ const EngineSchema = v.object({
 	name: v.pipe(v.string(), v.minLength(1)),
 	cost: v.pipe(v.number(), v.minValue(0)),
 	buildTime: v.pipe(v.number(), v.integer(), v.minValue(1)),
+	/** Crew demand of one engine — staffing is derived, not player-set. */
+	staffing: v.pipe(v.number(), v.integer(), v.minValue(0)),
 	/** How many generators one engine of this type can drive. */
 	generatorsDriven: v.pipe(v.number(), v.integer(), v.minValue(1))
 });
@@ -24,6 +26,8 @@ const GeneratorSchema = v.object({
 	name: v.pipe(v.string(), v.minLength(1)),
 	cost: v.pipe(v.number(), v.minValue(0)),
 	buildTime: v.pipe(v.number(), v.integer(), v.minValue(1)),
+	/** Crew demand of one generator — staffing is derived, not player-set. */
+	staffing: v.pipe(v.number(), v.integer(), v.minValue(0)),
 	capacityKw: v.pipe(v.number(), v.minValue(0.01))
 });
 
@@ -99,6 +103,22 @@ export function plantInstalledCapacity(plant: Plant, catalog: BuildingCatalog = 
  */
 export function plantAvailableCapacity(plant: Plant, catalog: BuildingCatalog = buildings): number {
 	return plantInstalledCapacity(plant, catalog);
+}
+
+/**
+ * Derived staff: Σ staffing of operational components (engines and
+ * generators). Components under construction hire nobody — the crew grows
+ * when a component completes and shrinks when one is removed
+ * (change: remove-employee-management).
+ */
+export function plantRequiredCrew(plant: Plant, catalog: BuildingCatalog = buildings): number {
+	let crew = 0;
+	for (const c of plant.components) {
+		if (c.status !== 'operational') continue;
+		const spec = catalog.engines.get(c.componentId) ?? catalog.generators.get(c.componentId);
+		if (spec) crew += spec.staffing;
+	}
+	return crew;
 }
 
 // ---------------------------------------------------------------------------

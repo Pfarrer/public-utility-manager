@@ -7,7 +7,8 @@
 		createPlant,
 		orderComponent,
 		plantAvailableCapacity,
-		plantInstalledCapacity
+		plantInstalledCapacity,
+		plantRequiredCrew
 	} from '$lib/game/plant';
 	import type { GameState } from '$lib/game/types';
 
@@ -71,6 +72,9 @@
 						{plantAvailableCapacity(plant).toFixed(0)} kW verfügbar
 					</span>
 				</header>
+				<p class="muted" data-testid="staff-line-{plant.id}">
+					Belegschaft: {plantRequiredCrew(plant)} Arbeiter (automatisch)
+				</p>
 				<ul>
 					{#each plant.components as c (c.id)}
 						<li class:op="{c.status === 'operational'}" class:building="{c.status === 'under_construction'}">

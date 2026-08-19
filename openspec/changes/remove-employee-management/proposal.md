@@ -1,22 +1,21 @@
 # Proposal: remove-employee-management
 
 ## Why
-The crew/staffing system (required crew per component, player-settable crew level, understaffing capacity factor, quarterly wage bill) adds micro-management that does not touch the grid simulation itself — plant capacity is already fully determined by the installed operational components. Removing it simplifies the core loop without losing grid depth.
+The manual crew/staffing system (player-settable crew level, understaffing factor, crew input) adds micro-management that does not add anything to the grid simulation. Workers and wages remain part of the simulation, but they are hired and dismissed implicitly based on operational needs.
 
 ## What Changes
-- **BREAKING** Remove staffing from power plants: required crew, player-settable crew and the understaffing capacity factor are deleted; available capacity equals the installed capacity of operational components.
-- **BREAKING** Remove wage costs: no wages transaction, no `wagePerCrewQuarter` balance value, the annual report no longer lists a wages position.
-- Remove the staffing level input (Besatzung) from the plant panel UI.
-- **BREAKING** Bump SAVE_VERSION to 3: existing saves that still carry crew/wage data are rejected by the version guard (no migration, established pattern).
-- Catalog data loses the `staffing` field per component.
+- Remove the player-facing staffing controls (`setCrew`, crew input, `Plant.crew`).
+- Keep workers in the simulation as a derived quantity: staff = Σ staffing of operational components (engines and generators); constructing components hire nobody yet, completed components hire, removal dismisses.
+- Keep wages as a quarterly cost position: staff × wage per crew quarter (data-driven).
+- `plantAvailableCapacity` equals installed capacity (plants are implicitly fully staffed).
+- SAVE_VERSION bump to 3 (old saves with player-set `crew` are rejected).
 
 ## Capabilities
-
-### Modified
-- `power-plant`: remove the "Staffing scales with components" requirement
-- `economy`: remove the "Wages from staffed crew" requirement
-- `game-ui`: drop the staffing level input from "Player controls work"
+### Modified Specs
+- `power-plant`: "Staffing follows components implicitly" replaces player-settable staffing.
+- `economy`: "Wages from derived staff" books wages from the derived crew total.
+- `game-ui`: "Player controls work" without a staffing input; staff shown read-only.
 
 ## Impact
-- Sim core (`types.ts`, `plant.ts`, `economy.ts`, `persistence.ts`), data (`buildings.json`, `economy.json`), UI (`PlantPanel`, `ReportModal`), and the affected tests.
-- Balance shift: wages were a recurring cost position; removing them makes operation more profitable. Accepted for now — re-tuning is explicitly out of scope and can follow as its own change if the game becomes too easy.
+- Breaking save change (v3 rejects v1/v2 saves), breaking data change (`staffing` semantics move from player budget to derived demand; `wagePerCrewQuarter` stays).
+- No balance retuning in this change.
