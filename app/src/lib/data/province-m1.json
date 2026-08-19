@@ -12,14 +12,29 @@
 					"name": "Hafenstadt",
 					"type": "city",
 					"population": 12000,
-					"households": { "wealthy": 400, "average": 2000, "poor": 3000 }
+					"households": { "wealthy": 400, "average": 2000, "poor": 3000 },
+					"geometry": {
+						"comment": "Polygon rings in a 0-1000 view box; thresholds calibrated to growth.json (~2%/year scaled): stage 2 after ~4-6 years, stage 3 after ~10-12 years of a campaign.",
+						"stages": [
+							{ "minHouseholds": 4200, "ring": "M 300,440 L 430,410 L 490,470 L 470,560 L 350,590 L 290,520 Z" },
+							{ "minHouseholds": 5700, "ring": "M 260,400 L 430,380 L 520,450 L 510,570 L 360,610 L 270,540 L 240,470 Z" },
+							{ "minHouseholds": 6200, "ring": "M 230,360 L 450,340 L 560,430 L 550,590 L 380,640 L 260,560 L 220,460 Z" }
+						]
+					}
 				},
 				{
 					"id": "village-fischerdorf",
 					"name": "Fischerdorf",
 					"type": "village",
 					"population": 2500,
-					"households": { "wealthy": 0, "average": 300, "poor": 700 }
+					"households": { "wealthy": 0, "average": 300, "poor": 700 },
+					"geometry": {
+						"stages": [
+							{ "minHouseholds": 800, "ring": "M 680,250 L 750,240 L 770,300 L 720,330 L 680,300 Z" },
+							{ "minHouseholds": 1100, "ring": "M 660,230 L 760,220 L 790,300 L 730,345 L 670,310 Z" },
+							{ "minHouseholds": 1250, "ring": "M 645,215 L 770,205 L 805,300 L 740,360 L 660,320 Z" }
+						]
+					}
 				}
 			]
 		},
@@ -34,7 +49,14 @@
 					"name": "Bergstadt",
 					"type": "city",
 					"population": 9000,
-					"households": { "wealthy": 250, "average": 1500, "poor": 2200 }
+					"households": { "wealthy": 250, "average": 1500, "poor": 2200 },
+					"geometry": {
+						"stages": [
+							{ "minHouseholds": 3000, "ring": "M 400,380 L 560,360 L 610,450 L 580,540 L 440,560 L 390,470 Z" },
+							{ "minHouseholds": 4200, "ring": "M 370,340 L 580,330 L 640,440 L 610,560 L 430,590 L 370,500 Z" },
+							{ "minHouseholds": 4600, "ring": "M 350,310 L 600,300 L 660,430 L 630,570 L 420,610 L 350,510 Z" }
+						]
+					}
 				}
 			]
 		},
@@ -49,7 +71,14 @@
 					"name": "Hochlanddorf",
 					"type": "village",
 					"population": 1800,
-					"households": { "wealthy": 20, "average": 350, "poor": 800 }
+					"households": { "wealthy": 20, "average": 350, "poor": 800 },
+					"geometry": {
+						"stages": [
+							{ "minHouseholds": 900, "ring": "M 460,420 L 540,410 L 555,470 L 505,495 L 460,465 Z" },
+							{ "minHouseholds": 1250, "ring": "M 445,400 L 555,395 L 575,475 L 505,505 L 450,475 Z" },
+							{ "minHouseholds": 1400, "ring": "M 435,385 L 565,380 L 590,480 L 505,515 L 440,480 Z" }
+						]
+					}
 				}
 			]
 		},
@@ -64,7 +93,14 @@
 					"name": "Ackerdorf",
 					"type": "village",
 					"population": 2100,
-					"households": { "wealthy": 30, "average": 400, "poor": 900 }
+					"households": { "wealthy": 30, "average": 400, "poor": 900 },
+					"geometry": {
+						"stages": [
+							{ "minHouseholds": 1000, "ring": "M 465,425 L 545,415 L 560,470 L 510,495 L 465,468 Z" },
+							{ "minHouseholds": 1400, "ring": "M 450,405 L 555,400 L 575,475 L 505,505 L 452,478 Z" },
+							{ "minHouseholds": 1550, "ring": "M 440,390 L 565,385 L 590,482 L 505,515 L 445,485 Z" }
+						]
+					}
 				}
 			]
 		}

@@ -10,6 +10,7 @@
 	import type { GameState, Newspaper, AnnualReport } from '$lib/game/types';
 	import ProvinceMap from './ProvinceMap.svelte';
 	import RegionDetail from './RegionDetail.svelte';
+	import CityView from './CityView.svelte';
 	import DemandChart from './DemandChart.svelte';
 	import PlantPanel from './PlantPanel.svelte';
 	import NewspaperModal from './NewspaperModal.svelte';
@@ -151,7 +152,7 @@
 	<main class="grid">
 		<div class="col">
 			<ProvinceMap selected={selectedRegion} onselect={(id: string) => (selectedRegion = id)} />
-			<RegionDetail {game} regionId={selectedRegion} />
+			<CityView {game} regionId={selectedRegion} />
 			{#if game.systems.demand.current[selectedRegion]}
 				<DemandChart
 					curve={game.systems.demand.current[selectedRegion]}
@@ -164,6 +165,7 @@
 		</div>
 
 		<div class="col">
+			<RegionDetail {game} regionId={selectedRegion} />
 			<section class="panel">
 				<h3>Tarif</h3>
 				<label class="tariff">

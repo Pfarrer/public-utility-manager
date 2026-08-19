@@ -1,5 +1,7 @@
 /** Province world model — regions, settlements, wealth segments (change: add-province-model). */
 
+import type { SettlementGeometry } from './geometry';
+
 /** Wealth categories fixed to 3 per vision. */
 export type WealthCategory = 'wealthy' | 'average' | 'poor';
 export const WEALTH_CATEGORIES: readonly WealthCategory[] = ['wealthy', 'average', 'poor'];
@@ -17,6 +19,8 @@ export interface Settlement {
 	population: number;
 	/** Household counts per wealth category. */
 	households: WealthSegments;
+	/** Display geometry: polygon growth stages (change: add-city-view). */
+	geometry: SettlementGeometry;
 }
 
 /** Terrain-flavoured regions of the province. */
