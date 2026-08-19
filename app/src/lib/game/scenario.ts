@@ -2,7 +2,8 @@
 
 import * as v from 'valibot';
 import provinceJson from '$lib/data/province-m1.json';
-import type { Province } from './province';
+import { validateSettlementGeometry } from './geometry';
+import { settlementHouseholds, type Province } from './province';
 
 /** Schema mirrors the `Province` type; load-time validation, fail-fast. */
 const WealthSegmentsSchema = v.object({
@@ -11,12 +12,23 @@ const WealthSegmentsSchema = v.object({
 	poor: v.pipe(v.number(), v.integer(), v.minValue(0))
 });
 
+const StageRingSchema = v.object({
+	minHouseholds: v.pipe(v.number(), v.integer(), v.minValue(0)),
+	ring: v.pipe(v.string(), v.minLength(1))
+});
+
+const SettlementGeometrySchema = v.object({
+	comment: v.optional(v.string()),
+	stages: v.pipe(v.array(StageRingSchema), v.minLength(1))
+});
+
 const SettlementSchema = v.object({
 	id: v.pipe(v.string(), v.minLength(1)),
 	name: v.pipe(v.string(), v.minLength(1)),
 	type: v.picklist(['city', 'village']),
 	population: v.pipe(v.number(), v.integer(), v.minValue(0)),
-	households: WealthSegmentsSchema
+	households: WealthSegmentsSchema,
+	geometry: SettlementGeometrySchema
 });
 
 const RegionSchema = v.object({
@@ -42,6 +54,13 @@ export function loadScenario(data: unknown): Province {
 		const issue = result.issues[0];
 		const path = issue.path?.map((p) => p.key).join('.') ?? '<root>';
 		throw new Error(`Invalid scenario data at '${path}': ${issue.message}`);
+	}
+	// Cross-field geometry rules the schema cannot express (change: add-city-view).
+	for (const region of result.output.regions) {
+		for (const settlement of region.settlements) {
+			const start = settlementHouseholds(settlement);
+			validateSettlementGeometry(settlement.geometry, start);
+		}
 	}
 	return result.output;
 }
