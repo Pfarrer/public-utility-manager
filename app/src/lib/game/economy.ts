@@ -2,6 +2,7 @@
 
 import * as v from 'valibot';
 import economyJson from '$lib/data/economy.json';
+import { plantRequiredCrew } from './plant';
 import type { AnnualReport, GameState, Transaction, TransactionKind } from './types';
 
 // ---------------------------------------------------------------------------
@@ -13,6 +14,7 @@ const EconomySchema = v.object({
 	tariffMin: v.pipe(v.number(), v.minValue(0.01)),
 	tariffMax: v.pipe(v.number(), v.minValue(0.01)),
 	fuelPricePerKwh: v.pipe(v.number(), v.minValue(0.01)),
+	/** Crew wage per quarter — staffing is derived, wages follow the fleet. */
 	wagePerCrewQuarter: v.pipe(v.number(), v.minValue(0)),
 	crisisFuelFactor: v.pipe(v.number(), v.minValue(1)),
 	bankruptcyQuarters: v.pipe(v.number(), v.integer(), v.minValue(1))
@@ -69,10 +71,9 @@ export interface QuarterInputs {
 /**
  * Settle the quarter: book revenue (served kWh × tariff), fuel (generated kWh
  * × fuel price × crisis factor — in M1 plants generate exactly what is
- * served), and wages (Σ staffed crew × quarterly wage) as transactions and
- * apply them to cash. Construction completions are booked as memo
- * transactions (cash was already debited on delivery by the construction
- * system) so the annual report is complete.
+ * served) as transactions and apply them to cash. Construction completions
+ * are booked as memo transactions (cash was already debited on delivery by
+ * the construction system) so the annual report is complete.
  *
  * Afterwards: bankruptcy counter update (game over after `bankruptcyQuarters`
  * consecutive negative-cash quarters, reset by a non-negative quarter) and,
@@ -94,7 +95,6 @@ export function runEconomy(state: GameState, inputs: QuarterInputs = {}): Transa
 	}
 	const contractTariff = state.systems.economy.tariff * state.systems.events.tram.tariffShare;
 	const householdKwh = Math.max(0, servedKwh - priorityKwh);
-	const crew = state.systems.construction.plants.reduce((sum, p) => sum + p.crew, 0);
 
 	const transactions: Transaction[] = [];
 	const book = (kind: TransactionKind, amount: number) => {
@@ -105,7 +105,13 @@ export function runEconomy(state: GameState, inputs: QuarterInputs = {}): Transa
 
 	book('revenue', householdKwh * eco.tariff + priorityKwh * contractTariff);
 	book('fuel', -(servedKwh * economy.fuelPricePerKwh * crisis));
-	book('wages', -(crew * economy.wagePerCrewQuarter));
+	// Wages from the derived staff: Σ staffing of operational components across
+	// all plants — workers are hired/dismissed implicitly as the fleet changes.
+	const staff = state.systems.construction.plants.reduce(
+		(sum, p) => sum + plantRequiredCrew(p),
+		0
+	);
+	book('wages', -(staff * economy.wagePerCrewQuarter));
 	for (const completion of state.systems.construction.completed) {
 		book('construction', -completion.cost);
 	}

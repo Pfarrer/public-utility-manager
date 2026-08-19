@@ -198,7 +198,6 @@ describe('economy × events integration', () => {
 			{ id: 100, componentId: 'steam-engine-1890', status: 'operational', remaining: 0, cost: 8000 },
 			{ id: 101, componentId: 'generator-50kw', status: 'operational', remaining: 0, cost: 5000 }
 		);
-		plant.crew = 10;
 		const next = tick(state);
 		const tx = next.systems.economy.transactions;
 		const revenue = tx.find((t) => t.kind === 'revenue');

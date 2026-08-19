@@ -35,7 +35,7 @@ jobs:
 
   # Deploy the static build to GitHub Pages on every push to main
   # (and on manual dispatch). CI must pass first.
-  deploy:
+  pages:
     if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     needs: ci
     runs-on: ubuntu-latest
@@ -73,3 +73,21 @@ jobs:
 
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  # Required-check gate: always reports the combined CI + Pages result, so a
+  # branch-protection rule on "deploy" does not keep blocking PRs where the
+  # real pages deploy never runs (it is main-only by design).
+  deploy:
+    needs: [ci, pages]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Report combined CI + Pages result
+        working-directory: ${{ github.workspace }}
+        run: |
+          ci_result="${{ needs.ci.result }}"
+          pages_result="${{ needs.pages.result }}"
+          echo "ci: $ci_result"
+          echo "pages: $pages_result"
+          if [ "$ci_result" != "success" ]; then exit 1; fi
+          if [ "$pages_result" != "success" ] && [ "$pages_result" != "skipped" ]; then exit 1; fi

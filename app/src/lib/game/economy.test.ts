@@ -93,14 +93,28 @@ describe('runEconomy', () => {
 		expect(fuel?.amount).toBe(-1440);
 	});
 
-	it('spec: 18 crew at 250 €/quarter → wages -4,500 €', () => {
+	it('spec: 18 crew at 250 €/quarter → wages -4,500 € (derived staffing)', () => {
 		const state = stateWithQuarter(2);
 		state.systems.construction.plants.push(
-			{ id: 1, name: 'A', regionId: 'region-coast', crew: 10, components: [] },
-			{ id: 2, name: 'B', regionId: 'region-coast', crew: 8, components: [] }
+			{
+				id: 1,
+				name: 'A',
+				regionId: 'region-coast',
+				components: [
+					{ id: 10, componentId: 'steam-engine-1890', status: 'operational', remaining: 0, cost: 8000 },
+					{ id: 11, componentId: 'steam-engine-1890', status: 'operational', remaining: 0, cost: 8000 }
+				]
+			},
+			{
+				id: 2,
+				name: 'B',
+				regionId: 'region-coast',
+				components: [{ id: 20, componentId: 'generator-50kw', status: 'operational', remaining: 0, cost: 5000 }]
+			}
 		);
 		const tx = runEconomy(state);
 		const wages = tx.find((t) => t.kind === 'wages');
+		// 2 engines × 8 + 1 generator × 2 = 18 crew → 18 × 250
 		expect(wages?.amount).toBe(-4500);
 	});
 
@@ -112,7 +126,7 @@ describe('runEconomy', () => {
 		];
 		const tx = runEconomy(state);
 		expect(tx.some((t) => t.kind === 'construction' && t.amount === -5000)).toBe(true);
-		// cash only moved by revenue/fuel/wages (12,000 kWh: +3,600 - 960)
+		// cash only moved by revenue/fuel/wages (12,000 kWh: +3,600 - 960; no operational components → no wages)
 		expect(state.cash).toBeCloseTo(before + 3600 - 960, 6);
 	});
 
@@ -123,7 +137,6 @@ describe('runEconomy', () => {
 		expect(report?.year).toBe(1891);
 		expect(report?.totals.revenue).toBe(3600);
 		expect(report?.totals.fuel).toBe(-960);
-		expect(report?.totals.wages).toBe(0);
 		expect(report?.net).toBeCloseTo(2640, 6);
 		expect(buildAnnualReport(state, 1891).net).toBeCloseTo(report?.net ?? NaN, 6);
 	});
@@ -166,7 +179,7 @@ describe('tick integration', () => {
 		expect(a.cash).toBe(START_CASH); // starting capital, untouched without plants
 	});
 
-	it('settlement with a staffed plant books revenue and wages', async () => {
+	it('settlement with an operational plant books revenue, fuel and derived wages', async () => {
 		const { createPlant } = await import('./plant');
 		const state = createInitialState();
 		const plant = createPlant(state, 'region-coast', 'Hafenkraftwerk');
@@ -174,13 +187,13 @@ describe('tick integration', () => {
 			{ id: 100, componentId: 'steam-engine-1890', status: 'operational', remaining: 0, cost: 8000 },
 			{ id: 101, componentId: 'generator-50kw', status: 'operational', remaining: 0, cost: 5000 }
 		);
-		plant.crew = 10; // required = 8 + 2 = 10 → staffing factor 1
 		const next = tick(state);
 		const tx = next.systems.economy.transactions;
 		expect(tx.filter((t) => t.kind === 'revenue')).toHaveLength(1);
+		// derived staff: engine 8 + generator 2 = 10 crew → wages -2,500
 		const wages = tx.find((t) => t.kind === 'wages');
 		expect(wages?.amount).toBe(-2500);
-		// 1 engine → 3 slots, 1 generator → 50 kW available
+		// 1 engine → 3 slots, 1 generator → 50 kW available (implicit full staffing)
 		const coast = next.systems.dispatch.current['region-coast'];
 		expect(coast?.capacityKw).toBe(50);
 		// revenue + fuel + wages applied to cash

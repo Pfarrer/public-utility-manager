@@ -9,9 +9,7 @@ import {
 	orderComponent,
 	plantAvailableCapacity,
 	plantInstalledCapacity,
-	plantRequiredCrew,
-	setCrew,
-	staffingFactor
+	plantRequiredCrew
 } from './plant';
 import type { GameState } from './types';
 
@@ -28,12 +26,26 @@ function stateWithPlant(): { state: GameState; plantId: number } {
 function giveOperational(state: GameState, plantId: number, componentId: string, n: number): void {
 	const plant = state.systems.construction.plants.find((p) => p.id === plantId)!;
 	for (let i = 0; i < n; i++) {
-		const spec = buildings.engines.get(componentId) ?? buildings.generators.get(componentId)!;
+		const spec = buildingsJson.components.find((c) => c.id === componentId)!;
 		plant.components.push({
-			id: 1000 + i,
+			id: 1000 + plant.components.length,
 			componentId,
 			status: 'operational',
 			remaining: 0,
+			cost: spec.cost
+		});
+	}
+}
+
+function giveUnderConstruction(state: GameState, plantId: number, componentId: string, n: number): void {
+	const plant = state.systems.construction.plants.find((p) => p.id === plantId)!;
+	for (let i = 0; i < n; i++) {
+		const spec = buildingsJson.components.find((c) => c.id === componentId)!;
+		plant.components.push({
+			id: 1000 + plant.components.length,
+			componentId,
+			status: 'under_construction',
+			remaining: 1,
 			cost: spec.cost
 		});
 	}
@@ -93,7 +105,8 @@ describe('construction queue', () => {
 		const afterOrder = tick(state); // Q1 → Q2
 		const comp = afterOrder.systems.construction.plants[0]!.components[0]!;
 		expect(comp.status).toBe('operational');
-		expect(afterOrder.cash).toBe(100_000 - 5000);
+		// 5000 construction (memo) + wages for 2 crew from delivery quarter (implicit staffing)
+		expect(afterOrder.cash).toBe(100_000 - 5000 - 500);
 		expect(afterOrder.systems.construction.completed[0]).toMatchObject({
 			componentId: GENERATOR,
 			cost: 5000
@@ -108,7 +121,8 @@ describe('construction queue', () => {
 		expect(q2.systems.construction.plants[0]!.components[0]!.status).toBe('under_construction');
 		const q3 = tick(q2);
 		expect(q3.systems.construction.plants[0]!.components[0]!.status).toBe('operational');
-		expect(q3.cash).toBe(100_000 - 8000);
+		// 8000 construction + wages for 8 crew once the engine is operational (delivery quarter)
+		expect(q3.cash).toBe(100_000 - 8000 - 2000);
 	});
 
 	it('rejects orders whose outstanding costs exceed cash', () => {
@@ -127,8 +141,8 @@ describe('construction queue', () => {
 	});
 });
 
-describe('staffing', () => {
-	it('required crew sums component staffing (2 engines + 6 generators = 28)', () => {
+describe('derived staffing (spec: remove-employee-management)', () => {
+	it('required crew sums staffing of operational components only', () => {
 		const { state, plantId } = stateWithPlant();
 		giveOperational(state, plantId, ENGINE, 2);
 		giveOperational(state, plantId, GENERATOR, 6);
@@ -136,25 +150,12 @@ describe('staffing', () => {
 		expect(plantRequiredCrew(plant)).toBe(2 * 8 + 6 * 2);
 	});
 
-	it('half-staffed plant yields 50% available capacity (spec scenario)', () => {
-		const { state, plantId } = stateWithPlant();
-		giveOperational(state, plantId, ENGINE, 2);
-		giveOperational(state, plantId, GENERATOR, 6);
-		const plant = state.systems.construction.plants.find((p) => p.id === plantId)!;
-		setCrew(state, plantId, plantRequiredCrew(plant) / 2);
-		expect(staffingFactor(plant)).toBeCloseTo(0.5);
-		expect(plantAvailableCapacity(plant)).toBeCloseTo(150);
-	});
-
-	it('setCrew clamps to [0, required]', () => {
+	it('components under construction hire nobody', () => {
 		const { state, plantId } = stateWithPlant();
 		giveOperational(state, plantId, ENGINE, 1);
-		setCrew(state, plantId, 999);
-		let plant = state.systems.construction.plants.find((p) => p.id === plantId)!;
-		expect(plant.crew).toBe(8);
-		setCrew(state, plantId, -5);
-		plant = state.systems.construction.plants.find((p) => p.id === plantId)!;
-		expect(plant.crew).toBe(0);
+		giveUnderConstruction(state, plantId, GENERATOR, 2);
+		const plant = state.systems.construction.plants.find((p) => p.id === plantId)!;
+		expect(plantRequiredCrew(plant)).toBe(8);
 	});
 
 	it('advanceConstruction is wired into the tick (deterministic replay)', () => {

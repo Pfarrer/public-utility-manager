@@ -102,17 +102,8 @@ describe('tick integration (demand → dispatch)', () => {
 		const next = tick(state);
 		const coast = next.systems.dispatch.current['region-coast'];
 		if (!coast) throw new Error('missing coast entry');
-		// 2 engines → 6 slots → 6 dynamos operational = 300 kW; crew 0 → staffing 0
-		expect(coast.capacityKw).toBe(0);
-		// staff it and the capacity counts
-		const staffed = structuredClone(state);
-		const p = staffed.systems.construction.plants.find((pl) => pl.id === plant.id);
-		if (!p) throw new Error('missing plant');
-		p.crew = 20; // required = 2×8 + 6×2 = 28 → factor 20/28
-		const next2 = tick(staffed);
-		const coast2 = next2.systems.dispatch.current['region-coast'];
-		if (!coast2) throw new Error('missing coast entry');
-		expect(coast2.capacityKw).toBeCloseTo(300 * (20 / 28), 6);
-		expect(coast2.peakKw).toBeGreaterThan(0);
+		// 2 engines → 6 slots → 6 dynamos operational = 300 kW (full staffing implied)
+		expect(coast.capacityKw).toBe(300);
+		expect(coast.peakKw).toBeGreaterThan(0);
 	});
 });

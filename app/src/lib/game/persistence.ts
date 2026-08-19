@@ -6,7 +6,7 @@
 import type { GameState } from './types';
 
 /** Bump on breaking state changes; M1 rejects old saves instead of migrating. */
-export const SAVE_VERSION = 2; // v2: quarterly energy basis (QUARTER_DAYS) — balance fix
+export const SAVE_VERSION = 3; // v3: staffing derived implicitly, no player-set crew
 export const SAVE_KEY = 'pum-save-v1';
 
 interface SaveFile {

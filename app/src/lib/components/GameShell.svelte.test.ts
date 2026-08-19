@@ -17,14 +17,13 @@ function atYear(year: number, base: GameState = createInitialState()): GameState
 	return s;
 }
 
-/** Build a state with a staffed, operational plant in the coast region. */
+/** Build a state with an operational plant in the coast region. */
 function withPlant(base: GameState = createInitialState()): GameState {
 	const plant = createPlant(base, 'region-coast', 'Kraftwerk Hafenstadt');
 	plant.components.push(
 		{ id: 100, componentId: 'steam-engine-1890', status: 'operational', remaining: 0, cost: 8000 },
 		{ id: 101, componentId: 'generator-50kw', status: 'operational', remaining: 0, cost: 5000 }
 	);
-	plant.crew = 10;
 	return base;
 }
 
@@ -105,14 +104,13 @@ describe('GameShell', () => {
 		expect(screen.getByTestId('clock').textContent).toBe('1890 — Q1');
 	});
 
-	it('crew change through the plant panel', async () => {
+	it('plant panel offers no staffing controls (spec: remove-employee-management)', () => {
 		const initial = withPlant();
-		const rendered = render(GameShell, { initialState: initial, autoRun: false });
-		const exposed = rendered.component as unknown as ShellExposed;
-		const input = screen.getByTestId('crew-input-1') as HTMLInputElement;
-		await fireEvent.input(input, { target: { value: '5' } });
-		await fireEvent.change(input);
-		expect(exposed.snapshot().systems.construction.plants[0].crew).toBe(5);
+		render(GameShell, { initialState: initial, autoRun: false });
+		expect(screen.queryByTestId('crew-input-1')).toBeFalsy();
+		expect(screen.queryByText('Besatzung')).toBeFalsy();
+		// capacity shows as installed capacity (50 kW from one dynamo)
+		expect(screen.getByText(/50 kW installiert/)).toBeTruthy();
 	});
 
 	it('tram offer appears in year 2 and is decidable', async () => {
