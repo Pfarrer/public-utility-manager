@@ -6,7 +6,7 @@ Player interface for M1: schematic province map, region detail with live numbers
 ## Requirements
 
 ### Requirement: Province map shows four regions
-The map SHALL render four region frames; the playable region SHALL be highlighted and locked regions SHALL be visually greyed with an unlock hint; settlements SHALL be circles sized by population.
+The province map SHALL be a compact region selector: four region entries, the playable region highlighted, locked regions visually greyed with an unlock hint; it SHALL NOT render settlement circles (settlements are the city view's concern); selecting a region SHALL open the city view for it as the primary surface.
 
 #### Scenario: Locked region hint
 - **WHEN** the map renders and a locked region is hovered
