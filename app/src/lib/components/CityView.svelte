@@ -1,12 +1,14 @@
 <script lang="ts">
 	/**
 	 * City view: the selected region's settlements as polygon footprints on a
-	 * 1890s-style paper canvas — grey base, warm illumination around running
-	 * plants (clipped to the polygon), animated plant icons, flow lines,
-	 * blackout flicker, stage-up highlight (change: add-city-view).
+	 * 1890s-style paper canvas — grey base, warm illumination (clipped to the
+	 * polygon, centred on the settlement), animated plant icons with
+	 * current-type badges, distribution flow lines from the running plants,
+	 * blackout flicker, stage-up highlight (changes: add-city-view,
+	 * region-grid-lighting, add-power-origin-transparency).
 	 */
 	import { province } from '$lib/game/scenario';
-	import { plantAvailableCapacity } from '$lib/game/plant';
+	import { plantAvailableCapacity, plantCurrentType } from '$lib/game/plant';
 	import {
 		plantAnchor,
 		ringCentroid,
@@ -40,9 +42,39 @@
 		return map;
 	});
 
+	/**
+	 * Region grid state (change: region-grid-lighting): the region is one
+	 * grid — live whenever any plant in the region has available capacity.
+	 * Mirrors the sim core, which dispatches region aggregate demand against
+	 * region aggregate capacity.
+	 */
+	const gridLive = $derived.by(() => {
+		if (!region) return false;
+		return game.systems.construction.plants.some(
+			(p) => p.regionId === regionId && plantAvailableCapacity(p) > 0
+		);
+	});
+
+	/** Running plant anchors of the region (grid feed-in points). */
+	const runningAnchors = $derived.by(() => {
+		if (!region || !gridLive) return [];
+		const anchors: { x: number; y: number; plantId: number; plantName: string }[] = [];
+		for (const [settlementId, list] of plantsBySettlement) {
+			const settlement = region.settlements.find((s) => s.id === settlementId);
+			if (!settlement) continue;
+			for (const p of list) {
+				if (plantAvailableCapacity(p) <= 0) continue;
+				const a = plantAnchor(settlement.geometry, `${settlement.id}#${p.id}`);
+				anchors.push({ x: a.x, y: a.y, plantId: p.id, plantName: p.name });
+			}
+		}
+		return anchors;
+	});
+
 	interface PlantView {
 		id: number;
 		operational: boolean;
+		currentType: 'dc' | 'ac';
 		x: number;
 		y: number;
 	}
@@ -57,8 +89,14 @@
 		centroidY: number;
 		/** Top of the polygon (for label placement). */
 		labelY: number;
-		/** Illumination radius; 0 when no plant runs. */
+		/** Illumination radius; 0 when the region grid is not live. */
 		glowR: number;
+		/** Distribution line source: nearest running plant anchor (null if none). */
+		feed: { x: number; y: number; plantId: number; plantName: string } | null;
+		/** Origin line (change: add-power-origin-transparency): feeding plant name, or null for self-supply/dark. */
+		origin: string | null;
+		/** True when the settlement's own assigned plant feeds it. */
+		selfSupplied: boolean;
 		plants: PlantView[];
 	}
 
@@ -88,11 +126,43 @@
 				share = total > 0 ? connected / total : 0;
 			}
 
-			// Any running plant paints light; the lit area fraction equals the
-			// settlement's electrification share (r ~ sqrt(share) · maxR).
+			// Region grid: any running plant feeds every settlement (change:
+			// region-grid-lighting). The lit area fraction equals the settlement's
+			// household-weighted electrification share (r ~ sqrt(share) · maxR).
+			const glowR = gridLive ? maxR * Math.sqrt(share) : 0;
+
+			// Distribution line: nearest running plant anchor → this settlement.
+			let feed: SettlementView['feed'] = null;
+			if (glowR > 0 && runningAnchors.length > 0) {
+				let best = runningAnchors[0];
+				let bestDist = Infinity;
+				for (const a of runningAnchors) {
+					const d = (a.x - centroid.x) ** 2 + (a.y - centroid.y) ** 2;
+					if (d < bestDist) {
+						bestDist = d;
+						best = a;
+					}
+				}
+				feed = { x: best.x, y: best.y, plantId: best.plantId, plantName: best.plantName };
+			}
+
 			const plantsHere = plantsBySettlement.get(settlement.id) ?? [];
 			const anyOperational = plantsHere.some((p) => plantAvailableCapacity(p) > 0);
-			const glowR = anyOperational ? maxR * Math.sqrt(share) : 0;
+
+			// Origin line (change: add-power-origin-transparency): only lit
+			// settlements carry one (dark = no origin). A settlement whose own
+			// assigned plant is running shows "Eigenversorgung"; a grid-fed
+			// settlement names its feeding plant — the same plant the
+			// distribution line is drawn from.
+			let origin: string | null = null;
+			let selfSupplied = false;
+			if (glowR > 0) {
+				if (anyOperational) {
+					selfSupplied = true;
+				} else if (feed) {
+					origin = feed.plantName;
+				}
+			}
 
 			views.push({
 				id: settlement.id,
@@ -104,11 +174,15 @@
 				centroidY: centroid.y,
 				labelY: centroid.y - maxR,
 				glowR,
+				feed,
+				origin,
+				selfSupplied,
 				plants: plantsHere.map((p) => {
 					const anchor = plantAnchor(settlement.geometry, `${settlement.id}#${p.id}`);
 					return {
 						id: p.id,
 						operational: plantAvailableCapacity(p) > 0,
+						currentType: plantCurrentType(p),
 						x: anchor.x,
 						y: anchor.y
 					};
@@ -127,7 +201,9 @@
 		const changed: string[] = [];
 		for (const s of settlements) {
 			const prev = lastStage.get(s.id);
-			if (prev !== undefined && prev !== s.stageIndex) changed.push(s.id);
+			if (prev !== undefined && prev !== s.stageIndex) {
+				changed.push(s.id);
+			}
 			lastStage.set(s.id, s.stageIndex);
 		}
 		if (changed.length > 0) {
@@ -154,6 +230,22 @@
 
 		<rect x="0" y="0" width={W} height={H} fill="url(#paper)" />
 
+		<!-- distribution lines (region grid): running plant → lit settlements -->
+		{#if gridLive}
+			{#each settlements as s (s.id)}
+				{#if s.feed}
+					<line
+						class="flow"
+						x1={s.feed.x}
+						y1={s.feed.y}
+						x2={s.centroidX}
+						y2={s.centroidY}
+						data-testid="grid-flow-{s.id}"
+					/>
+				{/if}
+			{/each}
+		{/if}
+
 		{#each settlements as s (s.id)}
 			{@const isHi = highlighted.includes(s.id)}
 			<g
@@ -167,22 +259,17 @@
 				<!-- base polygon (grey) -->
 				<path class="ring" d={s.ring} />
 
-				<!-- illumination around the first running plant, clipped to the ring -->
-				{#if s.glowR > 0 && s.plants.length > 0}
-					{@const anchor = s.plants[0]}
+				<!-- illumination centred on the settlement, clipped to the ring -->
+				{#if s.glowR > 0}
 					<clipPath id="clip-{s.id}">
 						<path d={s.ring} />
 					</clipPath>
 					<g class="illumination" clip-path="url(#clip-{s.id})">
-						<circle cx={anchor.x} cy={anchor.y} r={s.glowR} fill="url(#glow)" />
+						<circle cx={s.centroidX} cy={s.centroidY} r={s.glowR} fill="url(#glow)" />
 					</g>
-					<!-- flow line: plant → settlement centroid -->
-					{#if anchor.operational}
-						<line class="flow" x1={anchor.x} y1={anchor.y} x2={s.centroidX} y2={s.centroidY} />
-					{/if}
 				{/if}
 
-				<!-- plant icons -->
+				<!-- plant icons with current-type badge -->
 				{#each s.plants as p (p.id)}
 					{#if p.operational}
 						<g class="plant running" data-testid="city-plant-{p.id}">
@@ -200,6 +287,12 @@
 							<line x1={p.x + 11} y1={p.y - 11} x2={p.x - 11} y2={p.y + 11} />
 						</g>
 					{/if}
+					<g class="current-badge" data-testid="plant-current-{p.id}">
+						<circle cx={p.x + 13} cy={p.y - 13} r="8" />
+						<text x={p.x + 13} y={p.y - 9.5} text-anchor="middle">
+							{p.currentType === 'ac' ? '~' : '⎓'}
+						</text>
+					</g>
 				{/each}
 
 				<!-- labels -->
@@ -209,6 +302,15 @@
 				<text class="caption" x={s.centroidX} y={s.labelY + 6} text-anchor="middle">
 					{s.households.toLocaleString('de-DE')}&#8201;Haushalte
 				</text>
+				{#if s.selfSupplied}
+					<text class="caption origin" x={s.centroidX} y={s.labelY + 22} text-anchor="middle" data-testid="origin-{s.id}">
+						Eigenversorgung
+					</text>
+				{:else if s.origin}
+					<text class="caption origin" x={s.centroidX} y={s.labelY + 22} text-anchor="middle" data-testid="origin-{s.id}">
+						Strom aus: {s.origin}
+					</text>
+				{/if}
 				{#if isHi}
 					<text class="stageup" x={s.centroidX} y={s.labelY - 30} text-anchor="middle" data-testid="city-stage-highlight">
 						▲ Die Stadt wächst
@@ -252,6 +354,9 @@
 		fill: #7a6a4f;
 		font-family: Georgia, 'Times New Roman', serif;
 	}
+	.settlement .caption.origin {
+		font-weight: 600;
+	}
 	.settlement .stageup {
 		font-size: 14px;
 		font-weight: 600;
@@ -281,6 +386,18 @@
 		stroke: #8a7a5a;
 		stroke-width: 2;
 		stroke-dasharray: 4 3;
+	}
+	/* current-type badge (⎓ / ~) on every plant icon */
+	.current-badge circle {
+		fill: #f8f3e6;
+		stroke: #4a3b26;
+		stroke-width: 1.5;
+	}
+	.current-badge text {
+		font-size: 11px;
+		font-weight: 700;
+		fill: #4a3b26;
+		font-family: Georgia, 'Times New Roman', serif;
 	}
 	.flow {
 		stroke: #b45309;

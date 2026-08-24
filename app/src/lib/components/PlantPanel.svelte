@@ -7,6 +7,7 @@
 		createPlant,
 		orderComponent,
 		plantAvailableCapacity,
+		plantCurrentType,
 		plantInstalledCapacity,
 		plantRequiredCrew
 	} from '$lib/game/plant';
@@ -67,6 +68,9 @@
 			<article class="plant" data-testid="plant-card">
 				<header>
 					<b>{plant.name}</b>
+					<span class="current-badge" data-testid="plant-current-{plant.id}">
+						{plantCurrentType(plant) === 'ac' ? '~' : '⎓'}
+					</span>
 					<span class="muted">
 						{plantInstalledCapacity(plant).toFixed(0)}&nbsp;kW installiert ·
 						{plantAvailableCapacity(plant).toFixed(0)}&nbsp;kW verfügbar
@@ -113,6 +117,17 @@
 	h4 { margin: 10px 0 4px; font-size: 12px; color: #475569; }
 	.plant { border-top: 1px solid #f1f5f9; padding: 8px 0; }
 	.plant header { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+	/* current-type badge (⎓ direct current / ~ alternating current) */
+	.current-badge {
+		font-size: 12px;
+		font-weight: 700;
+		color: #4a3b26;
+		background: #f8f3e6;
+		border: 1px solid #4a3b26;
+		border-radius: 999px;
+		padding: 0 6px;
+		line-height: 18px;
+	}
 	.muted { color: #94a3b8; font-size: 11px; }
 	ul { margin: 4px 0; padding-left: 16px; font-size: 12px; }
 	li.op { color: #047857; }

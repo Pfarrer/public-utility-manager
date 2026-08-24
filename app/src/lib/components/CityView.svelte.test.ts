@@ -7,6 +7,8 @@ import { describe, expect, it } from 'vitest';
 import CityView from './CityView.svelte';
 import { createInitialState } from '$lib/game/sim';
 import { createPlant } from '$lib/game/plant';
+import { ringCentroid } from '$lib/game/geometry';
+import provinceM1 from '$lib/data/province-m1.json';
 import type { GameState } from '$lib/game/types';
 
 /** Build a state with an operational plant in the coast region. */
@@ -111,6 +113,89 @@ describe('CityView', () => {
 		});
 		const { container: c2 } = render(CityView, { game: game2, regionId: 'region-coast' });
 		expect(c2.querySelector('.flow')).toBeNull();
+	});
+
+	it('lights the village from the regional grid without its own plant', () => {
+		// The plant is hash-assigned to ONE settlement; the other must still
+		// light up (region grid) and get a distribution line (spec: village
+		// lights from the regional grid).
+		const game = withPlant();
+		const { container } = render(CityView, { game, regionId: 'region-coast' });
+		const city = screen.getByTestId('city-settlement-city-hafenstadt');
+		const village = screen.getByTestId('city-settlement-village-fischerdorf');
+		// initial share 0.05 → glow > 0 for BOTH settlements
+		expect(Number(city.getAttribute('data-glow'))).toBeGreaterThan(0);
+		expect(Number(village.getAttribute('data-glow'))).toBeGreaterThan(0);
+		// distribution line reaches the village
+		expect(container.querySelector('[data-testid="grid-flow-village-fischerdorf"]')).toBeTruthy();
+		expect(container.querySelector('[data-testid="grid-flow-city-hafenstadt"]')).toBeTruthy();
+	});
+
+	it('keeps every polygon grey while no plant in the region runs', () => {
+		const game = createInitialState(); // no plants at all
+		const { container } = render(CityView, { game, regionId: 'region-coast' });
+		expect(container.querySelector('.illumination')).toBeNull();
+		expect(container.querySelector('.flow')).toBeNull();
+	});
+
+	it('centres the glow on the settlement centroid, not the plant anchor', () => {
+		const game = withPlant();
+		render(CityView, { game, regionId: 'region-coast' });
+		const settle = screen.getByTestId('city-settlement-city-hafenstadt');
+		const glowCircle = settle.querySelector('.illumination circle');
+		expect(glowCircle).toBeTruthy();
+		// expected centroid from the live scenario geometry
+		const hafenstadt = provinceM1.regions[0].settlements.find(
+			(s) => s.id === 'city-hafenstadt'
+		);
+		const ring = hafenstadt?.geometry.stages[0].ring ?? '';
+		const centroid = ringCentroid(ring);
+		expect(Number(glowCircle?.getAttribute('cx'))).toBeCloseTo(centroid.x, 3);
+		expect(Number(glowCircle?.getAttribute('cy'))).toBeCloseTo(centroid.y, 3);
+	});
+
+	it('shows Eigenversorgung for a settlement whose own plant runs', () => {
+		const game = withPlant();
+		render(CityView, { game, regionId: 'region-coast' });
+		const origin = screen.getByTestId('origin-city-hafenstadt');
+		expect(origin.textContent).toContain('Eigenversorgung');
+	});
+
+	it('names the feeding plant for a grid-fed settlement', () => {
+		const game = withPlant();
+		render(CityView, { game, regionId: 'region-coast' });
+		// Fischerdorf has no plant of its own; the region grid lights it and
+		// the origin line names the plant (spec: fed village names the plant).
+		const origin = screen.getByTestId('origin-village-fischerdorf');
+		expect(origin.textContent).toContain('Strom aus:');
+		expect(origin.textContent).toContain('Kraftwerk Hafenstadt');
+	});
+
+	it('renders no origin line for dark settlements', () => {
+		// no plant anywhere → everything dark, no origin line at all
+		render(CityView, { game: createInitialState(), regionId: 'region-coast' });
+		expect(screen.queryByTestId('origin-city-hafenstadt')).toBeNull();
+		expect(screen.queryByTestId('origin-village-fischerdorf')).toBeNull();
+	});
+
+	it('carries the DC badge on every rendered plant icon', () => {
+		const game = withPlant();
+		render(CityView, { game, regionId: 'region-coast' });
+		expect(screen.getByTestId('plant-current-1').textContent).toContain('⎓');
+	});
+
+	it('renders the badge also for plants under construction', () => {
+		const game = createInitialState();
+		const plant = createPlant(game, 'region-coast', 'Kraftwerk im Bau');
+		plant.components.push({
+			id: 100,
+			componentId: 'steam-engine-1890',
+			status: 'under_construction',
+			remaining: 2,
+			cost: 8000
+		});
+		render(CityView, { game, regionId: 'region-coast' });
+		expect(screen.getByTestId('plant-current-1').textContent).toContain('⎓');
 	});
 });
 

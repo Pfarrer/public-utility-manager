@@ -9,7 +9,8 @@ The UI SHALL provide a customer mix panel showing, for each settlement of the se
 
 #### Scenario: Household-weighted average
 - **WHEN** wealthy share is 0.71 with 800 households, average share 0.40 with 300, poor share 0.11 with 100
-- **THEN** the panel shows a household-weighted average of 54 %
+- **THEN** the panel shows a household-weighted average of 58 %
+  (0.71·800 + 0.40·300 + 0.11·100 = 699 of 1,200 households)
 
 #### Scenario: Panel updates after tick
 - **WHEN** a quarter tick completes while the panel is open
