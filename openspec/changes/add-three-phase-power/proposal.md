@@ -11,6 +11,7 @@ Gleichzeitig sichert change `add-power-origin-transparency` die Anzeige-Basis: H
 - **Stromart wird Spielersteuerung:** Jedes Werk kann parallel DC- und AC-Generatoren enthalten. `plant.currentType` existiert bereits als Anzeige-Feld; dieser Change macht die Stromart zur Eigenschaft des **Generators** (`componentId` entscheidet), nicht des Werks.
 - **Drehstrom hat eigenen Tarif:** Der Spieler legt neben dem DC-Tarif einen eigenen Drehstrom-Tarif fest ($/kWh, gleiche Clamp-Bounds). Kunden „entscheiden": AC-Adoption wächst nur, wenn AC-Kapazität verfügbar UND AC-Tarif ≤ Zahlungsbereitschaft des Segments.
 - **Kunden bleiben an ihrer Stromart:** Bestehende DC-Shares wandern nicht automatisch. AC-Shares wachsen von 0 an (eigene Adoption je Segment). Schwarzsichtbar im Kunden-Mix-Panel (Gliederung nach Stromart) und an den ⎓/~-Badges der Werke.
+- **Option „Keine neuen Gleichstromverträge":** Der Spieler kann die Annahme neuer DC-Kunden stoppen (historisch blieb DC parallel kaufbar — der Auslauf ist Spielerentscheidung). DC-Adoption friert ein; Bestandskunden wandern nur ab, wenn AC verfügbar UND günstiger ist (feste Quartalsrate, „Vertragsauslauf").
 - **Save-Format:** SAVE_VERSION → 4 mit Migration (Bestand: alle Generatoren DC, alle Shares DC zugeordnet).
 
 # Impact

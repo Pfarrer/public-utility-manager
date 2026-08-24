@@ -15,10 +15,11 @@
 - [ ] 3.1 PlantPanel: Alternator mit Jahr-Gate (vor 1892 `aria-disabled` + „ab 1892 verfügbar"-Hinweis), Stromart-Badge ⎓/~ am Werks-Eintrag
 - [ ] 3.2 GameShell: zweiter Tarif-Slider (Drehstrom), nur sichtbar ab 1892
 - [ ] 3.3 CustomerMixPanel: Gliederung nach Stromart (⎓/~) je Segment; AC=0-Hinweis „Drehstrom: noch keine Kunden — Tarif senken oder warten"
+- [ ] 3.4 DC-Auslauf-Toggle „Keine neuen Gleichstromverträge" (`dcAcceptingNew`, default an) — neben DC-Tarif; zeigt Abwanderungsrate nur an, wenn AC verfügbar UND günstiger
 - requires: game-ui
 
 ## 4. Persistenz & Migration
-- [ ] 4.1 `persistence.ts`: SAVE_VERSION = 4, `migrateSave` v3→v4 (Komponenten → dc, tariff → {dc,ac}, shares → {dc: old, ac: 0})
+- [ ] 4.1 `persistence.ts`: SAVE_VERSION = 4, `migrateSave` v3→v4 (Komponenten → dc, tariff → {dc,ac}, shares → {dc: old, ac: 0}, dcAcceptingNew → true)
 - [ ] 4.2 Tests: Roundtrip v4, Migration v3→v4 deterministisch, Version-Guard bleibt
 - requires: persistence
 

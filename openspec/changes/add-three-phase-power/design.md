@@ -50,8 +50,14 @@ Der Sim-Kern führt Elektrifizierungs-Anteile pro Siedlung und Wohlstandsschicht
 
 v3 → v4 wie D5. `SAVE_VERSION`-Guard (spec: persistence „Version guard") gilt weiter: v3-Saves werden beim Laden migriert, nicht abgelehnt — der Guard-Text bleibt für zukünftige Versionen. Implementierung: `persistence.ts` `migrateSave(raw)` vor Validate.
 
+## Resolved Decisions (User, 2026-08-24)
+
+**D7 — DC-Acceptance-Toggle „Keine neuen Gleichstromverträge".** Historisch blieb DC parallel kaufbar (München DC bis 1948, NYC bis 2007) — der Auslauf ist im Spiel Spielerentscheidung, nicht Automatik. Neuer Zustand `dcAcceptingNew` (default `true`, Teil von SAVE v4). Effekt bei `false`: (a) DC-Adoption wächst nicht mehr (keine Neukunden); (b) Bestands-DC-Kunden wandern pro Quartal mit fester Rate ab (Balance-Parameter `dcPhaseOutPerQuarter`, initial 2–3 Prozentpunkte), **aber nur** wenn AC-Kapazität verfügbar UND AC-Tarif < DC-Tarif — Modell: bei Geräteverschleiß/Neuanschaffung geht der Kunde dann an AC. Ohne Toggle: keine Abwanderung ( historische DC-Enklaven liefen Jahrzehnte weiter).
+
+**D8 — Alternator-Balancing: initial identisch zum Dynamo.** `alternator-1892` startet mit 50 kW, gleichen Kosten und gleicher Bauzeit wie `generator-50kw` — technologieneutraler Einstieg, der Umrüst-Schmerz entsteht durch Kapazitätsaufbau und Kundenakquise, nicht durch Preisdiskriminierung. Größere Generatorklassen kommen später als reine Datenerweiterung (`buildings.json` ist data-driven; historisch skalierte Drehstrom bis 1900 rasch auf mehrere hundert kW) — kein Spec-Change nötig.
+
+**D9 — Tram bleibt DC-Verbraucherin; die Speisung wechselt (Folge-Change).** Historisch: Trams fuhren von Anfang an 600 V DC und tun es bis heute; ab ca. 1900–1910 speisten Unterwerke mit rotierenden Umformern aus dem Drehstrom-Fernnetz (IEEE/nycsubway-Quellen). Für das Spiel als Folge-Change `tram-supply-conversion` skizziert: Ab historischem Stichjahr stellt die Tram-Gesellschaft eine Anfrage (Zeitungs-/Nachrichtensystem) an den Spieler — „ab Jahr X versorgt ihr uns über ein Umformerwerk aus eurem Drehstromnetz". Ab X zählt die Tram-Last auf der AC-Seite (mit Umformer-Wirkungsgradverlust), solange Umformerwerk + AC-Kapazität stehen; sonst Blackout-Risiko fürs Tram-Segment. Der Spieler wird ein Jahr vorher gewarnt (analog Crisis-Ankündigung) und muss AC + Umformer rechtzeitig bauen. Dieser Change baut auf den AC-Shares und dem Umformer-losen Kern hier auf.
+
 ## Open Questions
 
-- **Preis-Sensibilität AC vs. DC:** Wählen Kunden bei gleichem Tarif DC (Bestandsvorteil) oder AC (bessere Spannungslage)? Vorschlag zur Implementierung: AC-Adoption nur, wenn AC-Tarif < DC-Tarif **oder** DC-Kapazität erschöpft — sonst bleibt alles beim Alten. Zu klären bei Implementierung.
-- **Alternator-Balancing:** Kosten/Kapazität/Bauzeit analog Dynamo 50 kW oder stärker/teurer? Tendenz: stärker + teurer (Drehstrom skaliert). Zu klären bei Implementierung.
-- **Industrie/Tram als AC-voraussetzende Segmente:** Folgewechsel, hier nur strukturell vorbereitet.
+- Keine offenen Fragen mehr in diesem Scope. (Tram-Umstellung: Folge-Change `tram-supply-conversion`, siehe D9; Industrie als AC-Segment dort mit bewerten.)
