@@ -1,7 +1,7 @@
 # Design: remove-employee-management
 
 ## Context
-Crew/staffing is interwoven with the sim core: `Plant.crew` in `types.ts`, `plantRequiredCrew`/`staffingFactor`/`setCrew` in `plant.ts`, the wages booking in `economy.ts`, and the Besatzung input in `PlantPanel.svelte`. User decision: manual crew management adds nothing to the grid simulation — workers and wages stay in the simulation, but staffing becomes a **derived** quantity that follows operational needs (implicit hiring/dismissal).
+Crew/staffing is interwoven with the sim core: `Plant.crew` in `types.ts`, `plantRequiredCrew`/`staffingFactor`/`setCrew` in `plant.ts`, the wages booking in `economy.ts`, and the crew input in `PlantPanel.svelte`. User decision: manual crew management adds nothing to the grid simulation — workers and wages stay in the simulation, but staffing becomes a **derived** quantity that follows operational needs (implicit hiring/dismissal).
 
 ## Goals
 - Zero player interaction for staffing: no crew input, no `setCrew` call path.
