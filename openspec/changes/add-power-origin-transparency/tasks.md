@@ -1,17 +1,17 @@
-## 1. Anzeige: Herkunft & Stromart
-- [ ] 1.1 CityView: Herkunftszeile pro Siedlung — „Strom aus: {Werk}" bei Zuführung, „Eigenversorgung" bei eigenem laufenden Werk (gleicher nearest-running-plant-Anker wie die Verteilungslinien)
-- [ ] 1.2 CityView: Stromart-Badge (⎓/~) am Kraftwerk-Icon, gerendert aus `plant.currentType` (bis change add-three-phase-power konstant `dc`)
-- [ ] 1.3 PlantPanel: Stromart-Badge im Werks-Eintrag ergänzen
-- [ ] 1.4 Tests: Herkunftszeile Zuführung vs. Eigenversorgung; Badge rendert ⎓
+## 1. Display: origin & current type
+- [ ] 1.1 CityView: origin line per settlement — "Strom aus: {plant}" when fed from the grid, "Eigenversorgung" with its own running plant (same nearest-running-plant anchor as the distribution lines)
+- [ ] 1.2 CityView: current-type badge (⎓/~) on the plant icon, rendered from `plant.currentType` (constant `dc` until change add-three-phase-power)
+- [ ] 1.3 PlantPanel: add current-type badge to the plant entry
+- [ ] 1.4 Tests: origin line grid-fed vs. self-supply; badge renders ⎓
 - requires: city-view, game-ui
 
-## 2. Kunden-Mix-Panel
-- [ ] 2.1 `CustomerMixPanel.svelte`: pro Siedlung Durchschnitt (haushaltsgewichtet) + reich/mittel/arm in Prozent, deutsche Zahlenformatierung
-- [ ] 2.2 GameShell: Panel in rechter Spalte unter Tarif platzieren
-- [ ] 2.3 Tests: Prozentwerte aus echten Shares; haushaltsgewichteter Durchschnitt; Rundung
+## 2. Customer mix panel
+- [ ] 2.1 `CustomerMixPanel.svelte`: per settlement household-weighted average + wealthy/average/poor in percent, German number formatting
+- [ ] 2.2 GameShell: place the panel in the right column below the tariff
+- [ ] 2.3 Tests: percentages from real shares; household-weighted average; rounding
 - requires: game-ui
 
-## 3. Verifikation
-- [ ] 3.1 Suite grün (vitest), svelte-check 0/0, build sauber
-- [ ] 3.2 Browser-Spotcheck: Herkunftszeile + Badge + Kunden-Mix mit laufendem Werk
+## 3. Verification
+- [ ] 3.1 Suite green (vitest), svelte-check 0/0, clean build
+- [ ] 3.2 Browser spot-check: origin line + badge + customer mix with a running plant
 - requires: app-scaffold
