@@ -66,3 +66,42 @@ On bankruptcy the UI SHALL show a game-over overlay with the final report and a 
 #### Scenario: Bankruptcy
 - **WHEN** the game-over flag is set
 - **THEN** the overlay blocks further play input and offers restart
+
+### Requirement: No line breaks inside value-unit pairs and control labels
+The UI SHALL render monetary amounts, tariffs and numeric value+unit pairs with a non-breaking space between value and unit (e.g. between amount and `$`, between tariff and `$/kWh`, between figure and `kW`), and top-bar buttons and badges SHALL NOT wrap their label text. The top bar MAY still wrap between its items.
+
+#### Scenario: Cash display in the top bar
+- **WHEN** the top bar renders the cash amount at any viewport width
+- **THEN** the amount and the `$` symbol appear on one line (joined by a non-breaking space)
+
+#### Scenario: Tariff value
+- **WHEN** the tariff panel shows the current tariff
+- **THEN** value and `$/kWh` are joined by a non-breaking space
+
+#### Scenario: Button and badge labels
+- **WHEN** top-bar buttons or badges render at a width that would otherwise wrap them
+- **THEN** their labels render on a single line (`white-space: nowrap`)
+
+#### Scenario: Report amounts
+- **WHEN** the annual report modal lists transaction amounts
+- **THEN** each amount and its `$` sign are joined by a non-breaking space
+
+#### Scenario: Panel figures
+- **WHEN** plant or region panels show figures with units (kW, workers, percent)
+- **THEN** value and unit are joined by a non-breaking space
+
+### Requirement: Customer mix panel
+The UI SHALL provide a customer mix panel showing, for each settlement of the selected region, the household-weighted average electrification share and the per-wealth-segment shares (wealthy/average/poor) in percent, derived from `GrowthState.shares` and `GrowthState.households`.
+
+#### Scenario: Percent per segment
+- **WHEN** a settlement's wealthy segment share is 0.71
+- **THEN** the panel shows „71 %" for that segment
+
+#### Scenario: Household-weighted average
+- **WHEN** wealthy share is 0.71 with 800 households, average share 0.40 with 300, poor share 0.11 with 100
+- **THEN** the panel shows a household-weighted average of 58 %
+  (0.71·800 + 0.40·300 + 0.11·100 = 699 of 1,200 households)
+
+#### Scenario: Panel updates after tick
+- **WHEN** a quarter tick completes while the panel is open
+- **THEN** the shown percentages reflect the new shares
