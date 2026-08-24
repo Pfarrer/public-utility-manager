@@ -153,6 +153,50 @@ describe('CityView', () => {
 		expect(Number(glowCircle?.getAttribute('cx'))).toBeCloseTo(centroid.x, 3);
 		expect(Number(glowCircle?.getAttribute('cy'))).toBeCloseTo(centroid.y, 3);
 	});
+
+	it('shows Eigenversorgung for a settlement whose own plant runs', () => {
+		const game = withPlant();
+		render(CityView, { game, regionId: 'region-coast' });
+		const origin = screen.getByTestId('origin-city-hafenstadt');
+		expect(origin.textContent).toContain('Eigenversorgung');
+	});
+
+	it('names the feeding plant for a grid-fed settlement', () => {
+		const game = withPlant();
+		render(CityView, { game, regionId: 'region-coast' });
+		// Fischerdorf has no plant of its own; the region grid lights it and
+		// the origin line names the plant (spec: fed village names the plant).
+		const origin = screen.getByTestId('origin-village-fischerdorf');
+		expect(origin.textContent).toContain('Strom aus:');
+		expect(origin.textContent).toContain('Kraftwerk Hafenstadt');
+	});
+
+	it('renders no origin line for dark settlements', () => {
+		// no plant anywhere → everything dark, no origin line at all
+		render(CityView, { game: createInitialState(), regionId: 'region-coast' });
+		expect(screen.queryByTestId('origin-city-hafenstadt')).toBeNull();
+		expect(screen.queryByTestId('origin-village-fischerdorf')).toBeNull();
+	});
+
+	it('carries the DC badge on every rendered plant icon', () => {
+		const game = withPlant();
+		render(CityView, { game, regionId: 'region-coast' });
+		expect(screen.getByTestId('plant-current-1').textContent).toContain('⎓');
+	});
+
+	it('renders the badge also for plants under construction', () => {
+		const game = createInitialState();
+		const plant = createPlant(game, 'region-coast', 'Kraftwerk im Bau');
+		plant.components.push({
+			id: 100,
+			componentId: 'steam-engine-1890',
+			status: 'under_construction',
+			remaining: 2,
+			cost: 8000
+		});
+		render(CityView, { game, regionId: 'region-coast' });
+		expect(screen.getByTestId('plant-current-1').textContent).toContain('⎓');
+	});
 });
 
 /** Helper: render, read stage index of Hafenstadt, unmount. */

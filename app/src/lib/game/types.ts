@@ -170,6 +170,14 @@ export interface EconomyState {
 
 export type ComponentStatus = 'under_construction' | 'operational';
 
+/**
+ * Generation current type. Pure display concept in this change
+ * (add-power-origin-transparency): every generator in the catalog is DC;
+ * the sim meaning (AC capacity, shares, tariff) lands with
+ * add-three-phase-power.
+ */
+export type CurrentType = 'dc' | 'ac';
+
 export interface PlantComponent {
 	id: number;
 	/** Catalog id of the component spec. */

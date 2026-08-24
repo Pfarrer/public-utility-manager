@@ -2,7 +2,7 @@
 
 import * as v from 'valibot';
 import buildingsJson from '$lib/data/buildings.json';
-import { nextId, type GameState, type Plant, type PlantComponent } from './types';
+import { nextId, type CurrentType, type GameState, type Plant, type PlantComponent } from './types';
 
 // ---------------------------------------------------------------------------
 // Catalog (JSON + valibot, fail-fast)
@@ -20,6 +20,8 @@ const EngineSchema = v.object({
 	generatorsDriven: v.pipe(v.number(), v.integer(), v.minValue(1))
 });
 
+const CurrentTypeSchema = v.picklist(['dc', 'ac']);
+
 const GeneratorSchema = v.object({
 	id: v.pipe(v.string(), v.minLength(1)),
 	kind: v.literal('generator'),
@@ -28,7 +30,13 @@ const GeneratorSchema = v.object({
 	buildTime: v.pipe(v.number(), v.integer(), v.minValue(1)),
 	/** Crew demand of one generator — staffing is derived, not player-set. */
 	staffing: v.pipe(v.number(), v.integer(), v.minValue(0)),
-	capacityKw: v.pipe(v.number(), v.minValue(0.01))
+	capacityKw: v.pipe(v.number(), v.minValue(0.01)),
+	/**
+	 * Generated current type — DC for every catalog generator until
+	 * add-three-phase-power adds the alternator (default 'dc', so the
+	 * existing data needs no change).
+	 */
+	currentType: v.optional(CurrentTypeSchema, 'dc')
 });
 
 const CatalogSchema = v.object({
@@ -119,6 +127,21 @@ export function plantRequiredCrew(plant: Plant, catalog: BuildingCatalog = build
 		if (spec) crew += spec.staffing;
 	}
 	return crew;
+}
+
+/**
+ * The plant's generation current type: alternating current as soon as one
+ * operational generator generates AC (⎓ otherwise). Pure display derivation
+ * (change: add-power-origin-transparency) — the catalog is DC-only until
+ * add-three-phase-power adds the alternator, so this yields 'dc' for every
+ * existing plant and save.
+ */
+export function plantCurrentType(plant: Plant, catalog: BuildingCatalog = buildings): CurrentType {
+	for (const c of plant.components) {
+		if (c.status !== 'operational') continue;
+		if (catalog.generators.get(c.componentId)?.currentType === 'ac') return 'ac';
+	}
+	return 'dc';
 }
 
 // ---------------------------------------------------------------------------

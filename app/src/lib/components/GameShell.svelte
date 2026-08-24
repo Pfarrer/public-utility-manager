@@ -12,6 +12,7 @@
 	import ProvinceMap from './ProvinceMap.svelte';
 	import RegionDetail from './RegionDetail.svelte';
 	import CityView from './CityView.svelte';
+	import CustomerMixPanel from './CustomerMixPanel.svelte';
 	import DemandChart from './DemandChart.svelte';
 	import PlantPanel from './PlantPanel.svelte';
 	import NewspaperModal from './NewspaperModal.svelte';
@@ -167,6 +168,7 @@
 
 		<div class="col">
 			<RegionDetail {game} regionId={selectedRegion} />
+			<CustomerMixPanel {game} regionId={selectedRegion} />
 			<section class="panel">
 				<h3>Tarif</h3>
 				<label class="tariff">
