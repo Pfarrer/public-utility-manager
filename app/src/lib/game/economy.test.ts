@@ -8,7 +8,8 @@ import {
 	loadEconomy,
 	moneyRound,
 	runEconomy,
-	setTariff
+	setTariff,
+	setTariffCurrent
 } from './economy';
 import type { GameState, QuarterDispatch } from './types';
 
@@ -19,9 +20,17 @@ function dispatchEntry(year: number, quarter: 1 | 2 | 3 | 4, servedKwh: number):
 		year,
 		quarter,
 		capacityKw: 300,
+		dcCapacityKw: 300,
+		acCapacityKw: 0,
 		peakKw: 120,
+		dcPeakKw: 120,
+		acPeakKw: 0,
 		servedKwh,
+		dcServedKwh: servedKwh,
+		acServedKwh: 0,
 		unservedKwh: 0,
+		dcUnservedKwh: 0,
+		acUnservedKwh: 0,
 		outageHours: 0,
 		blackout: false,
 		priorityServedKwh: 0
@@ -70,11 +79,18 @@ describe('setTariff', () => {
 	it('clamps to data bounds and rounds to cents', () => {
 		const state = createInitialState();
 		setTariff(state, 5);
-		expect(state.systems.economy.tariff).toBe(economy.tariffMax);
+		expect(state.systems.economy.tariff).toEqual({ dc: economy.tariffMax, ac: economy.tariffMax });
 		setTariff(state, 0.0001);
-		expect(state.systems.economy.tariff).toBe(economy.tariffMin);
+		expect(state.systems.economy.tariff).toEqual({ dc: economy.tariffMin, ac: economy.tariffMin });
 		setTariff(state, 0.3333);
-		expect(state.systems.economy.tariff).toBe(0.33);
+		expect(state.systems.economy.tariff).toEqual({ dc: 0.33, ac: 0.33 });
+	});
+
+	it('setTariffCurrent changes only the named current type (change: add-three-phase-power)', () => {
+		const state = createInitialState();
+		setTariffCurrent(state, 'ac', 0.25);
+		expect(state.systems.economy.tariff.ac).toBe(0.25);
+		expect(state.systems.economy.tariff.dc).toBe(economy.tariffDefault);
 	});
 });
 

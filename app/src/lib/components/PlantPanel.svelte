@@ -55,6 +55,9 @@
 		orderFeedback = result.ok ? '' : result.reason;
 		onaction();
 	}
+
+	/** Alternator year gate (change: add-three-phase-power, D2): orderable from 1892. */
+	const alternatorAvailable = $derived(game.clock.year >= 1892);
 </script>
 
 <section class="panel" data-testid="plant-panel">
@@ -96,6 +99,15 @@
 					<button onclick={() => order(plant.id, 'generator-50kw')} data-testid="order-generator-{plant.id}">
 						+ Dynamo (5.000&nbsp;$)
 					</button>
+					{#if alternatorAvailable}
+						<button onclick={() => order(plant.id, 'alternator-1892')} data-testid="order-alternator-{plant.id}">
+							+ Alternator ~ (5.000&nbsp;$)
+						</button>
+					{:else}
+						<button disabled aria-disabled="true" data-testid="order-alternator-{plant.id}" title="verfügbar ab 1892">
+							+ Alternator ~ (ab 1892)
+						</button>
+					{/if}
 				</div>
 			</article>
 		{/each}

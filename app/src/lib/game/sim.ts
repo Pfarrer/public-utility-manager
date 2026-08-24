@@ -20,11 +20,12 @@ export function createInitialState(seed = 0x1890): GameState {
 		gameOver: false,
 		systems: {
 			construction: { plants: [], completed: [] },
-			demand: { current: {} },
+			demand: { current: {}, currentByType: {} },
 			dispatch: { current: {}, history: [], satisfaction: {} },
 			growth: initGrowth(),
 			economy: {
-				tariff: economyData.tariffDefault,
+				tariff: { dc: economyData.tariffDefault, ac: economyData.tariffDefault },
+				dcAcceptingNew: true,
 				transactions: [],
 				annualReports: [],
 				negativeCashQuarters: 0

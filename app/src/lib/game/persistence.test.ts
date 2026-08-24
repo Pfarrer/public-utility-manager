@@ -41,11 +41,26 @@ describe('persistence', () => {
 		const storage = new MemoryStorage();
 		storage.setItem(
 			SAVE_KEY,
-			JSON.stringify({ version: SAVE_VERSION - 1, state: createInitialState() })
+			JSON.stringify({ version: SAVE_VERSION - 2, state: createInitialState() })
 		);
 		expect(() => loadGame(storage)).toThrowError(
-			new RegExp(`Save version mismatch: save is v${SAVE_VERSION - 1}, build expects v${SAVE_VERSION}`)
+			new RegExp(`Save version mismatch: save is v${SAVE_VERSION - 2}, build expects v${SAVE_VERSION}`)
 		);
+	});
+
+	it('v3 save migrates to v4: tariff pair, shares split, dcAcceptingNew (change: add-three-phase-power)', () => {
+		const storage = new MemoryStorage();
+		const v3 = createInitialState() as unknown as {
+			systems: { economy: { tariff: number; dcAcceptingNew?: boolean }; growth: { shares: Record<string, Record<string, number>> } };
+		};
+		v3.systems.economy.tariff = 0.3;
+		const first = Object.keys(v3.systems.growth.shares)[0]!;
+		v3.systems.growth.shares[first]!.wealthy = 0.71;
+		storage.setItem(SAVE_KEY, JSON.stringify({ version: 3, state: v3 }));
+		const loaded = loadGame(storage);
+		expect(loaded.systems.economy.tariff).toEqual({ dc: 0.3, ac: 0.3 });
+		expect(loaded.systems.economy.dcAcceptingNew).toBe(true);
+		expect(loaded.systems.growth.shares[first]!.wealthy).toEqual({ dc: 0.71, ac: 0 });
 	});
 
 	it('corrupt JSON is rejected with a clear error', () => {

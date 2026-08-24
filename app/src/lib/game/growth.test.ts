@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import growthJson from '$lib/data/growth.json';
-import { regionDemand } from './demand';
+import { regionDemandByType } from './demand';
 import { createRng } from './rng';
 import { createInitialState, tick } from './sim';
 import {
@@ -11,7 +11,7 @@ import {
 	runGrowth,
 	yearlyGrowth
 } from './growth';
-import type { GameState } from './types';
+import type { GameState, SegmentShare } from './types';
 
 describe('growth data', () => {
 	it('loads the M1 balance data', () => {
@@ -38,25 +38,95 @@ describe('growth data', () => {
 
 describe('nextShare', () => {
 	it('spec: good service (no blackout, tariff ≤ wtp) increases the share', () => {
-		const next = nextShare(0.5, { blackout: false, tariff: 0.3, satisfaction: 60 }, 0.5);
-		expect(next).toBeCloseTo(0.54, 10);
+		const next = nextShare(
+			{ dc: 0.5, ac: 0 },
+			{ blackout: false, tariff: { dc: 0.3, ac: 0.3 }, satisfaction: 60, acCapacityKw: 0 },
+			0.5
+		);
+		expect(next.dc).toBeCloseTo(0.54, 10);
+		expect(next.ac).toBe(0);
 	});
 
 	it('stalls with only one bad factor (blackout xor overprice)', () => {
-		const stalled = nextShare(0.5, { blackout: true, tariff: 0.3, satisfaction: 60 }, 0.5);
-		expect(stalled).toBe(0.5);
-		const stalled2 = nextShare(0.5, { blackout: false, tariff: 0.4, satisfaction: 60 }, 0.3);
-		expect(stalled2).toBe(0.5);
+		const stalled = nextShare(
+			{ dc: 0.5, ac: 0 },
+			{ blackout: true, tariff: { dc: 0.3, ac: 0.3 }, satisfaction: 60, acCapacityKw: 0 },
+			0.5
+		);
+		expect(stalled.dc).toBe(0.5);
+		const stalled2 = nextShare(
+			{ dc: 0.5, ac: 0 },
+			{ blackout: false, tariff: { dc: 0.4, ac: 0.4 }, satisfaction: 60, acCapacityKw: 0 },
+			0.3
+		);
+		expect(stalled2.dc).toBe(0.5);
 	});
 
 	it('spec: blackout + overprice shrinks the share (deadoption)', () => {
-		const next = nextShare(0.5, { blackout: true, tariff: 0.4, satisfaction: 60 }, 0.3);
-		expect(next).toBeCloseTo(0.49, 10);
+		const next = nextShare(
+			{ dc: 0.5, ac: 0 },
+			{ blackout: true, tariff: { dc: 0.4, ac: 0.4 }, satisfaction: 60, acCapacityKw: 0 },
+			0.3
+		);
+		expect(next.dc).toBeCloseTo(0.49, 10);
 	});
 
 	it('clamps to [0, 1]', () => {
-		expect(nextShare(0.99, { blackout: false, tariff: 0.1, satisfaction: 90 }, 0.15)).toBe(1);
-		expect(nextShare(0.005, { blackout: true, tariff: 0.4, satisfaction: 10 }, 0.15)).toBe(0);
+		expect(
+			nextShare(
+				{ dc: 0.99, ac: 0 },
+				{ blackout: false, tariff: { dc: 0.1, ac: 0.1 }, satisfaction: 90, acCapacityKw: 0 },
+				0.15
+			).dc
+		).toBe(1);
+		expect(
+			nextShare(
+				{ dc: 0.005, ac: 0 },
+				{ blackout: true, tariff: { dc: 0.4, ac: 0.4 }, satisfaction: 10, acCapacityKw: 0 },
+				0.15
+			).dc
+		).toBe(0);
+	});
+
+	it('spec: AC adoption starts from zero with AC capacity and affordable AC tariff (change: add-three-phase-power)', () => {
+		const share: SegmentShare = { dc: 0.5, ac: 0 };
+		const next = nextShare(
+			share,
+			{ blackout: false, tariff: { dc: 0.3, ac: 0.25 }, satisfaction: 60, acCapacityKw: 50 },
+			0.5
+		);
+		expect(next.ac).toBeCloseTo(0.04, 10);
+		expect(next.dc).toBeCloseTo(0.54, 10);
+	});
+
+	it('spec: no AC without AC capacity', () => {
+		const next = nextShare(
+			{ dc: 0.5, ac: 0 },
+			{ blackout: false, tariff: { dc: 0.3, ac: 0.25 }, satisfaction: 60, acCapacityKw: 0 },
+			0.5
+		);
+		expect(next.ac).toBe(0);
+	});
+
+	it('spec: AC growth respects the shared total (dc + ac ≤ 1)', () => {
+		const next = nextShare(
+			{ dc: 0.98, ac: 0 },
+			{ blackout: false, tariff: { dc: 0.3, ac: 0.25 }, satisfaction: 60, acCapacityKw: 50 },
+			0.5
+		);
+		expect(next.ac).toBeCloseTo(0.02, 10); // capped by 1 - dc
+		expect(next.dc + next.ac).toBeLessThanOrEqual(1);
+	});
+
+	it('spec: freezing DC (dcAcceptingNew=false) stops DC growth', () => {
+		const next = nextShare(
+			{ dc: 0.5, ac: 0 },
+			{ blackout: false, tariff: { dc: 0.3, ac: 0.3 }, satisfaction: 60, acCapacityKw: 0 },
+			0.5,
+			growth,
+			false
+		);
+		expect(next.dc).toBe(0.5);
 	});
 });
 
@@ -67,7 +137,8 @@ describe('initGrowth', () => {
 		expect(coast).toBeDefined();
 		expect(coast.poor + coast.average + coast.wealthy).toBeGreaterThan(0);
 		for (const cat of ['wealthy', 'average', 'poor'] as const) {
-			expect(g.shares['city-hafenstadt'][cat]).toBeCloseTo(growth.initialShare, 10);
+			expect(g.shares['city-hafenstadt'][cat].dc).toBeCloseTo(growth.initialShare, 10);
+			expect(g.shares['city-hafenstadt'][cat].ac).toBe(0);
 		}
 	});
 });
@@ -75,38 +146,54 @@ describe('initGrowth', () => {
 describe('runGrowth (quarterly adoption)', () => {
 	it('spec: good quarter raises every segment share in unlocked regions', () => {
 		const state = createInitialState();
-		state.systems.economy.tariff = 0.15; // ≤ poor wtp → all segments affordable
+		state.systems.economy.tariff = { dc: 0.15, ac: 0.15 }; // ≤ poor wtp → all segments affordable
 		state.systems.dispatch.current['region-coast'] = {
 			regionId: 'region-coast',
 			year: 1890,
 			quarter: 1,
 			capacityKw: 9999,
+			dcCapacityKw: 9999,
+			acCapacityKw: 0,
 			peakKw: 10,
+			dcPeakKw: 10,
+			acPeakKw: 0,
 			servedKwh: 100,
+			dcServedKwh: 100,
+			acServedKwh: 0,
 			unservedKwh: 0,
+			dcUnservedKwh: 0,
+			acUnservedKwh: 0,
 			outageHours: 0,
 			blackout: false,
 			priorityServedKwh: 0
 		};
 		runGrowth(state);
 		const shares = state.systems.growth.shares['city-hafenstadt'];
-		expect(shares.wealthy).toBeCloseTo(0.05 + 0.04, 10);
-		expect(shares.average).toBeCloseTo(0.05 + 0.04, 10);
-		expect(shares.poor).toBeCloseTo(0.05 + 0.04, 10);
+		expect(shares.wealthy.dc).toBeCloseTo(0.05 + 0.04, 10);
+		expect(shares.average.dc).toBeCloseTo(0.05 + 0.04, 10);
+		expect(shares.poor.dc).toBeCloseTo(0.05 + 0.04, 10);
 	});
 
 	it('spec: 4 blackout + overprice quarters → year-end share < year start', () => {
 		const state = createInitialState();
-		state.systems.economy.tariff = 0.6; // above every wtp
+		state.systems.economy.tariff = { dc: 0.6, ac: 0.6 }; // above every wtp
 		for (let q = 1; q <= 4; q++) {
 			state.systems.dispatch.current['region-coast'] = {
 				regionId: 'region-coast',
 				year: 1890,
 				quarter: q,
 				capacityKw: 0,
+				dcCapacityKw: 0,
+				acCapacityKw: 0,
 				peakKw: 10,
+				dcPeakKw: 10,
+				acPeakKw: 0,
 				servedKwh: 0,
+				dcServedKwh: 0,
+				acServedKwh: 0,
 				unservedKwh: 100,
+				dcUnservedKwh: 100,
+				acUnservedKwh: 0,
 				outageHours: 5,
 				blackout: true,
 				priorityServedKwh: 0
@@ -114,9 +201,46 @@ describe('runGrowth (quarterly adoption)', () => {
 			runGrowth(state);
 		}
 		const shares = state.systems.growth.shares['city-hafenstadt'];
-		expect(shares.wealthy).toBeCloseTo(0.05 - 4 * 0.01, 10);
-		expect(shares.poor).toBeCloseTo(Math.max(0, 0.05 - 4 * 0.01), 10);
-		expect(shares.wealthy).toBeLessThan(growth.initialShare);
+		expect(shares.wealthy.dc).toBeCloseTo(0.05 - 4 * 0.01, 10);
+		expect(shares.poor.dc).toBeCloseTo(Math.max(0, 0.05 - 4 * 0.01), 10);
+		expect(shares.wealthy.dc).toBeLessThan(growth.initialShare);
+	});
+
+	it('spec: DC phase-out drift moves DC to AC only when AC is cheaper (D7)', () => {
+		const state = createInitialState();
+		state.systems.economy.tariff = { dc: 0.3, ac: 0.25 };
+		state.systems.economy.dcAcceptingNew = false;
+		state.systems.dispatch.current['region-coast'] = {
+			regionId: 'region-coast',
+			year: 1890,
+			quarter: 1,
+			capacityKw: 9999,
+			dcCapacityKw: 0,
+			acCapacityKw: 9999,
+			peakKw: 10,
+			dcPeakKw: 10,
+			acPeakKw: 0,
+			servedKwh: 100,
+			dcServedKwh: 100,
+			acServedKwh: 0,
+			unservedKwh: 0,
+			dcUnservedKwh: 0,
+			acUnservedKwh: 0,
+			outageHours: 0,
+			blackout: false,
+			priorityServedKwh: 0
+		};
+		runGrowth(state);
+		const shares = state.systems.growth.shares['city-hafenstadt'];
+		// DC frozen (no growth) and drifting: 0.05 - 0.025 = 0.025. AC gains the
+		// drift (0.025) plus regular adoption (0.04) since AC is cheaper than DC.
+		expect(shares.wealthy.dc).toBeCloseTo(0.05 - 0.025, 10);
+		expect(shares.wealthy.ac).toBeCloseTo(0.025 + 0.04, 10);
+		// Without a price advantage nothing drifts.
+		state.systems.economy.tariff = { dc: 0.25, ac: 0.25 };
+		const dcBefore = shares.wealthy.dc;
+		runGrowth(state);
+		expect(state.systems.growth.shares['city-hafenstadt'].wealthy.dc).toBeCloseTo(dcBefore, 10);
 	});
 });
 
@@ -126,7 +250,11 @@ describe('yearlyGrowth', () => {
 		const state = createInitialState();
 		state.systems.dispatch.satisfaction['region-coast'] = 90;
 		for (const id of Object.keys(state.systems.growth.households)) {
-			state.systems.growth.shares[id] = { wealthy: 1, average: 1, poor: 1 };
+			state.systems.growth.shares[id] = {
+				wealthy: { dc: 1, ac: 0 },
+				average: { dc: 1, ac: 0 },
+				poor: { dc: 1, ac: 0 }
+			};
 		}
 		return state;
 	}
@@ -171,7 +299,11 @@ describe('yearlyGrowth', () => {
 		const state = createInitialState();
 		state.systems.dispatch.satisfaction['region-coast'] = 30;
 		for (const id of Object.keys(state.systems.growth.households)) {
-			state.systems.growth.shares[id] = { wealthy: 1, average: 1, poor: 1 };
+			state.systems.growth.shares[id] = {
+				wealthy: { dc: 1, ac: 0 },
+				average: { dc: 1, ac: 0 },
+				poor: { dc: 1, ac: 0 }
+			};
 		}
 		const before = structuredClone(state.systems.growth.households);
 		yearlyGrowth(state);
@@ -206,15 +338,15 @@ describe('demand × growth integration', () => {
 				}
 			]
 		} as const;
-		const full = regionDemand(region as never, createRng(1), {
+		const full = regionDemandByType(region as never, createRng(1), {
 			households: { s: { wealthy: 100, average: 100, poor: 100 } },
-			shares: { s: { wealthy: 1, average: 1, poor: 1 } }
+			shares: { s: { wealthy: { dc: 1, ac: 0 }, average: { dc: 1, ac: 0 }, poor: { dc: 1, ac: 0 } } }
 		});
-		const partial = regionDemand(region as never, createRng(1), {
+		const partial = regionDemandByType(region as never, createRng(1), {
 			households: { s: { wealthy: 100, average: 100, poor: 100 } },
-			shares: { s: { wealthy: 0.5, average: 0.5, poor: 0.5 } }
+			shares: { s: { wealthy: { dc: 0.5, ac: 0 }, average: { dc: 0.5, ac:0 }, poor: { dc: 0.5, ac: 0 } } }
 		});
-		expect(partial.energyKwh).toBeCloseTo(full.energyKwh * 0.5, 6);
+		expect(partial.dc.energyKwh).toBeCloseTo(full.dc.energyKwh * 0.5, 6);
 	});
 });
 
@@ -227,7 +359,11 @@ describe('tick integration', () => {
 		// make the year prosperous so growth actually happens
 		state.systems.dispatch.satisfaction['region-coast'] = 90;
 		for (const id of Object.keys(state.systems.growth.households)) {
-			state.systems.growth.shares[id] = { wealthy: 1, average: 1, poor: 1 };
+			state.systems.growth.shares[id] = {
+				wealthy: { dc: 1, ac: 0 },
+				average: { dc: 1, ac: 0 },
+				poor: { dc: 1, ac: 0 }
+			};
 		}
 		const next = tick(state); // settles Q4 → year boundary
 		const after = next.systems.growth.households;

@@ -46,6 +46,12 @@ export interface ConstructionState {}
 /** Per-region demand curves of the current quarter, kWh-sampled hourly in kW. */
 export interface DemandState {
 	current: Record<string, number[]>;
+	/**
+	 * Per current type curves of the current quarter (change:
+	 * add-three-phase-power): DC and AC are separate physical networks —
+	 * each side is dispatched against its own capacity pool.
+	 */
+	currentByType: Record<string, { dc: number[]; ac: number[] }>;
 }
 
 /** One region's dispatch result for a quarter. */
@@ -53,16 +59,32 @@ export interface QuarterDispatch {
 	regionId: string;
 	year: number;
 	quarter: number;
-	/** Available generation (kW) — installed capacity across the region's plants. */
+	/** Available generation (kW) — installed capacity across the region's plants (dc + ac). */
 	capacityKw: number;
-	/** Demand maximum of the representative day (kW). */
+	/** DC portion of the available capacity (kW); total capacity stays dc + ac (change: add-three-phase-power). */
+	dcCapacityKw: number;
+	/** AC portion of the available capacity (kW). */
+	acCapacityKw: number;
+	/** Demand maximum of the representative day (kW), both pools. */
 	peakKw: number;
+	/** DC pool demand peak (kW). */
+	dcPeakKw: number;
+	/** AC pool demand peak (kW). */
+	acPeakKw: number;
 	servedKwh: number;
+	/** Served energy from the DC pool (kWh) — DC demand cannot draw on AC capacity. */
+	dcServedKwh: number;
+	/** Served energy from the AC pool (kWh). */
+	acServedKwh: number;
 	unservedKwh: number;
-	/** Hours of the representative day with any deficit. */
+	/** Unserved energy on the DC pool (kWh). */
+	dcUnservedKwh: number;
+	/** Unserved energy on the AC pool (kWh). */
+	acUnservedKwh: number;
+	/** Hours of the representative day with any deficit (either pool). */
 	outageHours: number;
 	blackout: boolean;
-	/** Priority (contract) energy actually served this quarter (kWh). */
+	/** Priority (contract) energy actually served this quarter (kWh, DC pool). */
 	priorityServedKwh: number;
 }
 
@@ -78,12 +100,18 @@ export interface DispatchState {
 // Growth (change: add-regional-growth)
 // ---------------------------------------------------------------------------
 
+/** Electrification share per settlement id × wealth category, split by current type (change: add-three-phase-power). */
+export interface SegmentShare {
+	dc: number;
+	ac: number;
+}
+
 /** Living households + electrification shares, owned by the growth system. */
 export interface GrowthState {
 	/** Household counts per settlement id — starts as a copy of the scenario, mutated by yearly growth. */
 	households: Record<string, WealthSegments>;
-	/** Electrification share per settlement id × wealth category, within [0, 1]. */
-	shares: Record<string, Record<WealthCategory, number>>;
+	/** Electrification share per settlement id × wealth category, within [0, 1] (dc + ac ≤ 1). */
+	shares: Record<string, Record<WealthCategory, SegmentShare>>;
 }
 
 // ---------------------------------------------------------------------------
@@ -154,8 +182,10 @@ export interface AnnualReport {
 }
 
 export interface EconomyState {
-	/** Player tariff in $/kWh (set via `setTariff`, clamped to data bounds). */
-	tariff: number;
+	/** Player tariffs in $/kWh by current type (set via `setTariffCurrent`, clamped to data bounds). */
+	tariff: { dc: number; ac: number };
+	/** No new DC contracts while false (change: add-three-phase-power, D7). Default true. */
+	dcAcceptingNew: boolean;
 	/** Append-only ledger of all booked transactions. */
 	transactions: Transaction[];
 	/** One report per closed year, appended after the Q4 settlement. */

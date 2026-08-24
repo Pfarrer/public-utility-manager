@@ -54,8 +54,29 @@ describe('GameShell', () => {
 		const slider = screen.getByTestId('tariff-slider') as HTMLInputElement;
 		await fireEvent.input(slider, { target: { value: '0.4' } });
 		await fireEvent.change(slider);
-		expect(exposed.snapshot().systems.economy.tariff).toBe(0.4);
+		expect(exposed.snapshot().systems.economy.tariff).toEqual({ dc: 0.4, ac: 0.3 });
 		expect((screen.getByTestId('tariff-value') as HTMLElement).textContent).toContain('0.40');
+	});
+
+	it('ac tariff slider appears from 1892 and updates only the ac tariff (change: add-three-phase-power)', async () => {
+		const initial = atYear(1892, withPlant());
+		const rendered = render(GameShell, { initialState: initial, autoRun: false });
+		const exposed = rendered.component as unknown as ShellExposed;
+		const slider = await screen.findByTestId('ac-tariff-slider');
+		await fireEvent.input(slider, { target: { value: '0.25' } });
+		await fireEvent.change(slider);
+		const tariff = exposed.snapshot().systems.economy.tariff;
+		expect(tariff.ac).toBe(0.25);
+		expect(tariff.dc).toBe(0.3);
+	});
+
+	it('dc accepting toggle flips dcAcceptingNew (change: add-three-phase-power)', async () => {
+		const initial = atYear(1892, withPlant());
+		const rendered = render(GameShell, { initialState: initial, autoRun: false });
+		const exposed = rendered.component as unknown as ShellExposed;
+		const toggle = await screen.findByTestId('dc-accepting-toggle');
+		await fireEvent.click(toggle);
+		expect(exposed.snapshot().systems.economy.dcAcceptingNew).toBe(false);
 	});
 
 	it('expansion click: order generator adds it to the queue', async () => {

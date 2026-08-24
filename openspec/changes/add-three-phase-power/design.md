@@ -28,7 +28,7 @@ The sim core tracks electrification shares per settlement and wealth segment (`g
 
 **D3 — One region-wide tariff pair, not per plant.** `economy.tariff` becomes `{ dc: number; ac: number }` (both $/kWh, same clamp bounds as today). The player sets both via one slider each. Rationale: one utility, one province, two current types — per-plant tariffs would be micromanagement without historical basis (municipal concessions set city-network tariffs, not per plant).
 
-**D3a — Separate capacity pools, one dispatch.** AC and DC capacity are reported separately per plant (display + plant panel), but dispatch remains **one** region dispatch: total capacity serves total demand. Rationale: historically plants operated both networks in parallel in the same service area; the separation lies in generation/adoption, not the network itself. This keeps the sim core small and prevents DC/AC accounting arbitrage.
+**D3a — Separate dispatch pools per current type.** AC and DC capacity are reported separately per plant AND dispatched as separate pools: DC demand is served from DC capacity only, AC demand from AC capacity only, with served/unserved energy and peaks recorded per pool. Rationale: the two current types are separate physical line networks in the same service area (historically plants operated both in parallel — but a DC network cannot feed AC appliances and vice versa). "One region dispatch" from `region-grid-lighting` continues to mean one dispatch *result* per region, now as the union of the two pools. (Revised 2026-08-24 after playtest: the original single-pool variant let DC capacity silently serve AC customers — violating the separation principle.)
 
 **D4 — AC adoption: same physics, new counters.** `growth.shares` becomes `shares[settlementId][segment]` → `{ dc: number; ac: number }` with `dc + ac ≤ 1`. Rules:
 - DC adoption: as today (blackout, tariff.dc ≤ wtp).
@@ -42,7 +42,7 @@ The sim core tracks electrification shares per settlement and wealth segment (`g
 
 ## Risks / Trade-offs
 
-- **One dispatch, two current types** could look physically unhistorical (DC and AC in the same network?). Reality was: separate line networks of the same plants in the same area. The "one region dispatch" abstraction was established with `region-grid-lighting` (region = one network); D3a consistently continues it — separated on the generation/adoption side, unified on the network side.
+- **One dispatch, two current types** could look physically unhistorical (DC and AC in the same network?). Reality was: separate line networks of the same plants in the same area. The dispatch result per region is now the union of two separated pools (D3a revised): the "one region dispatch" abstraction from `region-grid-lighting` (region = one network) is refined, not abandoned — each current type is its own network, the region result aggregates both.
 - **Two tariff sliders** + customer mix breakdown raise UI load. Mitigated by the customer mix panel (one source of truth for both current types).
 - **AC starts at 0** — the first AC quarters feel "dead" (no AC customers, but maintenance costs). Historically correct and intended: the conversion pain is the point. UI hint in the customer mix panel ("Three-phase: no customers yet — lower the tariff or wait").
 

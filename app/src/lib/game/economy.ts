@@ -3,7 +3,9 @@
 import * as v from 'valibot';
 import economyJson from '$lib/data/economy.json';
 import { plantRequiredCrew } from './plant';
-import type { AnnualReport, GameState, Transaction, TransactionKind } from './types';
+import { WEALTH_CATEGORIES } from './province';
+import { province } from './scenario';
+import type { AnnualReport, CurrentType, GameState, Transaction, TransactionKind } from './types';
 
 // ---------------------------------------------------------------------------
 // Balance data (JSON + valibot, fail-fast)
@@ -52,10 +54,19 @@ export function moneyRound(value: number): number {
 // Player action
 // ---------------------------------------------------------------------------
 
-/** Set the tariff ($/kWh), clamped to the data bounds and rounded to cents. */
-export function setTariff(state: GameState, tariff: number): void {
+/**
+ * Set one current type's tariff ($/kWh), clamped to the data bounds and
+ * rounded to cents (change: add-three-phase-power, D3).
+ */
+export function setTariffCurrent(state: GameState, type: CurrentType, tariff: number): void {
 	const clamped = Math.min(economy.tariffMax, Math.max(economy.tariffMin, tariff));
-	state.systems.economy.tariff = moneyRound(clamped);
+	state.systems.economy.tariff[type] = moneyRound(clamped);
+}
+
+/** Backwards-compatible single-tariff setter: sets both current types. */
+export function setTariff(state: GameState, tariff: number): void {
+	setTariffCurrent(state, 'dc', tariff);
+	setTariffCurrent(state, 'ac', tariff);
 }
 
 // ---------------------------------------------------------------------------
@@ -84,17 +95,26 @@ export function runEconomy(state: GameState, inputs: QuarterInputs = {}): Transa
 	const crisis = inputs.crisisFactor ?? 1;
 	const { year, quarter } = state.clock;
 
-	const servedKwh = Object.values(state.systems.dispatch.current).reduce(
-		(sum, d) => sum + d.servedKwh,
-		0
-	);
+	// Served energy split by current type (change: add-three-phase-power):
+	// taken directly from the separate dispatch pools — DC revenue is billed
+	// for DC-served energy, AC revenue for AC-served energy. No proportional
+	// attribution across pools: the current types are separate networks.
+	let dcServedKwh = 0;
+	let acServedKwh = 0;
+	for (const d of Object.values(state.systems.dispatch.current)) {
+		dcServedKwh += d.dcServedKwh;
+		acServedKwh += d.acServedKwh;
+	}
+	const servedKwh = dcServedKwh + acServedKwh;
 	// Contract (tram) energy is billed at the contract's tariff share.
 	let priorityKwh = 0;
 	for (const d of Object.values(state.systems.dispatch.current)) {
 		if (d.priorityServedKwh > 0) priorityKwh = d.priorityServedKwh; // single deal region in M1
 	}
-	const contractTariff = state.systems.economy.tariff * state.systems.events.tram.tariffShare;
+	const contractTariff =
+		state.systems.economy.tariff.dc * state.systems.events.tram.tariffShare;
 	const householdKwh = Math.max(0, servedKwh - priorityKwh);
+	dcServedKwh = Math.max(0, dcServedKwh - priorityKwh);
 
 	const transactions: Transaction[] = [];
 	const book = (kind: TransactionKind, amount: number) => {
@@ -103,7 +123,11 @@ export function runEconomy(state: GameState, inputs: QuarterInputs = {}): Transa
 		transactions.push({ year, quarter, kind, amount: rounded });
 	};
 
-	book('revenue', householdKwh * eco.tariff + priorityKwh * contractTariff);
+	// Revenue split by current type (spec: economy "Revenue from served energy",
+	// change: add-three-phase-power): DC and AC revenue are booked as separate
+	// transactions.
+	book('revenue', dcServedKwh * eco.tariff.dc + priorityKwh * contractTariff);
+	book('revenue', acServedKwh * eco.tariff.ac);
 	book('fuel', -(servedKwh * economy.fuelPricePerKwh * crisis));
 	// Wages from the derived staff: Σ staffing of operational components across
 	// all plants — workers are hired/dismissed implicitly as the fleet changes.
