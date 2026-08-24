@@ -13,5 +13,5 @@
 
 ## 3. Verification
 - [x] 3.1 Suite green (vitest), svelte-check 0/0, clean build
-- [ ] 3.2 Browser spot-check: origin line + badge + customer mix with a running plant
+- [x] 3.2 Browser spot-check: origin line + badge + customer mix with a running plant
 - requires: app-scaffold
