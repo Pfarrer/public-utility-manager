@@ -170,13 +170,14 @@ export function aggregate(curves: number[][]): QuarterDemand {
 }
 
 /**
- * Region demand of the representative day: one group per
- * (settlement × wealth category, connected households > 0) plus optional
- * businesses. Connected households = living households × electrification
- * share (growth system). Jitter is drawn per group in deterministic order
- * (settlement, then category).
+ * Region demand of the representative day, split by current type (change:
+ * add-three-phase-power): DC and AC are separate physical networks. Each
+ * (settlement × wealth category) group contributes its DC-connected and
+ * AC-connected households to the respective pool; businesses count as DC.
+ * Jitter is drawn per group in deterministic order (settlement, then
+ * category), so the RNG consumption matches the single-curve variant.
  */
-export function regionDemand(
+export function regionDemandByType(
 	region: Region,
 	rng: RngState,
 	options: {
@@ -184,25 +185,34 @@ export function regionDemand(
 		defs?: Profiles;
 		/** Living households per settlement id × category (growth system). */
 		households?: Record<string, WealthSegments>;
-		/** Electrification share per settlement id × category (growth system; dc + ac summed for demand). */
+		/** Electrification share per settlement id × category (growth system). */
 		shares?: Record<string, Record<WealthCategory, number | SegmentShare>>;
 	} = {}
-): QuarterDemand {
+): { dc: QuarterDemand; ac: QuarterDemand } {
 	const defs = options.defs ?? profiles;
-	const curves: number[][] = [];
+	const dcCurves: number[][] = [];
+	const acCurves: number[][] = [];
 	for (const settlement of region.settlements) {
 		for (const category of WEALTH_CATEGORIES) {
 			const living = options.households?.[settlement.id]?.[category] ?? settlement.households[category];
-			const raw = options.shares?.[settlement.id]?.[category] ?? 1;
-			const share = typeof raw === 'number' ? raw : raw.dc + raw.ac;
-			const connected = living * share;
-			if (connected <= 0) continue;
-			curves.push(householdGroupCurve(connected, category, drawJitter(rng, defs.jitter), defs));
+			const share = options.shares?.[settlement.id]?.[category] ?? { dc: 1, ac: 0 };
+			const dcShare = typeof share === 'number' ? share : share.dc;
+			const acShare = typeof share === 'number' ? 0 : share.ac;
+			const dcConnected = living * dcShare;
+			const acConnected = living * acShare;
+			if (dcConnected <= 0 && acConnected <= 0) continue;
+			const jitter = drawJitter(rng, defs.jitter);
+			if (dcConnected > 0) {
+				dcCurves.push(householdGroupCurve(dcConnected, category, jitter, defs));
+			}
+			if (acConnected > 0) {
+				acCurves.push(householdGroupCurve(acConnected, category, jitter, defs));
+			}
 		}
 	}
 	const businessCount = options.businessCount ?? 0;
 	if (businessCount > 0) {
-		curves.push(businessGroupCurve(businessCount, drawJitter(rng, defs.jitter), defs));
+		dcCurves.push(businessGroupCurve(businessCount, drawJitter(rng, defs.jitter), defs));
 	}
-	return aggregate(curves);
+	return { dc: aggregate(dcCurves), ac: aggregate(acCurves) };
 }

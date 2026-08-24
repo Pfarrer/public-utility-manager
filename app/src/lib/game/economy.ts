@@ -96,36 +96,16 @@ export function runEconomy(state: GameState, inputs: QuarterInputs = {}): Transa
 	const { year, quarter } = state.clock;
 
 	// Served energy split by current type (change: add-three-phase-power):
-	// households are attributed to DC/AC by their share proportion of the
-	// total share; contract (tram) energy stays with its current type.
-	const servedKwh = Object.values(state.systems.dispatch.current).reduce(
-		(sum, d) => sum + d.servedKwh,
-		0
-	);
+	// taken directly from the separate dispatch pools — DC revenue is billed
+	// for DC-served energy, AC revenue for AC-served energy. No proportional
+	// attribution across pools: the current types are separate networks.
 	let dcServedKwh = 0;
 	let acServedKwh = 0;
-	{
-		let dcWeight = 0;
-		let acWeight = 0;
-		for (const region of province.regions) {
-			if (!region.unlocked) continue;
-			for (const settlement of region.settlements) {
-				const households = state.systems.growth.households[settlement.id];
-				if (!households) continue;
-				for (const cat of WEALTH_CATEGORIES) {
-					const share = state.systems.growth.shares[settlement.id]?.[cat] ?? { dc: 0, ac: 0 };
-					dcWeight += households[cat] * share.dc;
-					acWeight += households[cat] * share.ac;
-				}
-			}
-		}
-		const totalWeight = dcWeight + acWeight;
-		if (totalWeight > 0) {
-			const householdKwhAll = servedKwh;
-			dcServedKwh = householdKwhAll * (dcWeight / totalWeight);
-			acServedKwh = householdKwhAll * (acWeight / totalWeight);
-		}
+	for (const d of Object.values(state.systems.dispatch.current)) {
+		dcServedKwh += d.dcServedKwh;
+		acServedKwh += d.acServedKwh;
 	}
+	const servedKwh = dcServedKwh + acServedKwh;
 	// Contract (tram) energy is billed at the contract's tariff share.
 	let priorityKwh = 0;
 	for (const d of Object.values(state.systems.dispatch.current)) {

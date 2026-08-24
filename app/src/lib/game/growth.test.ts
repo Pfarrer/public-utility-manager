@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import growthJson from '$lib/data/growth.json';
-import { regionDemand } from './demand';
+import { regionDemandByType } from './demand';
 import { createRng } from './rng';
 import { createInitialState, tick } from './sim';
 import {
@@ -155,8 +155,14 @@ describe('runGrowth (quarterly adoption)', () => {
 			dcCapacityKw: 9999,
 			acCapacityKw: 0,
 			peakKw: 10,
+			dcPeakKw: 10,
+			acPeakKw: 0,
 			servedKwh: 100,
+			dcServedKwh: 100,
+			acServedKwh: 0,
 			unservedKwh: 0,
+			dcUnservedKwh: 0,
+			acUnservedKwh: 0,
 			outageHours: 0,
 			blackout: false,
 			priorityServedKwh: 0
@@ -180,8 +186,14 @@ describe('runGrowth (quarterly adoption)', () => {
 				dcCapacityKw: 0,
 				acCapacityKw: 0,
 				peakKw: 10,
+				dcPeakKw: 10,
+				acPeakKw: 0,
 				servedKwh: 0,
+				dcServedKwh: 0,
+				acServedKwh: 0,
 				unservedKwh: 100,
+				dcUnservedKwh: 100,
+				acUnservedKwh: 0,
 				outageHours: 5,
 				blackout: true,
 				priorityServedKwh: 0
@@ -206,8 +218,14 @@ describe('runGrowth (quarterly adoption)', () => {
 			dcCapacityKw: 0,
 			acCapacityKw: 9999,
 			peakKw: 10,
+			dcPeakKw: 10,
+			acPeakKw: 0,
 			servedKwh: 100,
+			dcServedKwh: 100,
+			acServedKwh: 0,
 			unservedKwh: 0,
+			dcUnservedKwh: 0,
+			acUnservedKwh: 0,
 			outageHours: 0,
 			blackout: false,
 			priorityServedKwh: 0
@@ -320,15 +338,15 @@ describe('demand × growth integration', () => {
 				}
 			]
 		} as const;
-		const full = regionDemand(region as never, createRng(1), {
+		const full = regionDemandByType(region as never, createRng(1), {
 			households: { s: { wealthy: 100, average: 100, poor: 100 } },
 			shares: { s: { wealthy: { dc: 1, ac: 0 }, average: { dc: 1, ac: 0 }, poor: { dc: 1, ac: 0 } } }
 		});
-		const partial = regionDemand(region as never, createRng(1), {
+		const partial = regionDemandByType(region as never, createRng(1), {
 			households: { s: { wealthy: 100, average: 100, poor: 100 } },
 			shares: { s: { wealthy: { dc: 0.5, ac: 0 }, average: { dc: 0.5, ac:0 }, poor: { dc: 0.5, ac: 0 } } }
 		});
-		expect(partial.energyKwh).toBeCloseTo(full.energyKwh * 0.5, 6);
+		expect(partial.dc.energyKwh).toBeCloseTo(full.dc.energyKwh * 0.5, 6);
 	});
 });
 

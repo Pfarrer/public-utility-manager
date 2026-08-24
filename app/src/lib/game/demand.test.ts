@@ -9,7 +9,7 @@ import {
 	loadProfiles,
 	profileCurve,
 	profiles,
-	regionDemand
+	regionDemandByType
 } from './demand';
 import { createRng } from './rng';
 import { loadScenario } from './scenario';
@@ -99,16 +99,24 @@ describe('region aggregation', () => {
 		expect(demand.energyKwh).toBeCloseTo(demand.curve.reduce((s, kw) => s + kw, 0), 6);
 	});
 
-	it('regionDemand draws groups in deterministic order and replays', () => {
-		const run = () => regionDemand(coast, createRng(1234));
+	it('regionDemandByType draws groups in deterministic order and replays', () => {
+		const run = () => regionDemandByType(coast, createRng(1234));
 		expect(run()).toEqual(run());
-		expect(run().curve.every((kw) => kw >= 0)).toBe(true);
+		expect(run().dc.curve.every((kw) => kw >= 0)).toBe(true);
 	});
 
 	it('coast region peak is plausible for its household numbers', () => {
-		const demand = regionDemand(coast, createRng(5));
-		expect(demand.peakKw).toBeGreaterThan(100);
-		expect(demand.peakKw).toBeLessThan(1000);
+		const demand = regionDemandByType(coast, createRng(5));
+		expect(demand.dc.peakKw).toBeGreaterThan(100);
+		expect(demand.dc.peakKw).toBeLessThan(1000);
+	});
+
+	it('shares split into separate dc and ac pools (no cross-supply)', () => {
+		const half = regionDemandByType(coast, createRng(5), {
+			shares: { 'city-hafenstadt': { wealthy: { dc: 0.05, ac: 0.05 }, average: { dc: 0.05, ac: 0.05 }, poor: { dc: 0.05, ac: 0.05 } }, 'village-fischerdorf': { wealthy: { dc: 0.05, ac: 0.05 }, average: { dc: 0.05, ac: 0.05 }, poor: { dc: 0.05, ac: 0.05 } } }
+		});
+		expect(half.dc.energyKwh).toBeGreaterThan(0);
+		expect(half.ac.energyKwh).toBeGreaterThan(0);
 	});
 
 	it('business curve with businesses is non-negative and sizable', () => {

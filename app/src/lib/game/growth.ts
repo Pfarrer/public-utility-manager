@@ -135,6 +135,14 @@ export function runGrowth(state: GameState, prov: Province = province): void {
 		};
 		const dcAcceptingNew = state.systems.economy.dcAcceptingNew;
 		const acCheaper = inputs.tariff.ac < inputs.tariff.dc;
+		// Real AC headroom (change: add-three-phase-power): the AC pool must
+		// be able to serve the migrated load — AC peak demand + drift must
+		// stay within AC capacity. A single alternator cannot pull a whole
+		// DC city onto the AC network (spec scenario "Migration needs AC
+		// headroom").
+		const acPeakKw = dispatch.acPeakKw;
+		const acCapacityKw = dispatch.acCapacityKw;
+		const driftAllowed = acCheaper && acCapacityKw - acPeakKw > 0;
 		for (const settlement of region.settlements) {
 			for (const cat of WEALTH_CATEGORIES) {
 				const current = g.shares[settlement.id]?.[cat] ?? { dc: 0, ac: 0 };
@@ -146,17 +154,23 @@ export function runGrowth(state: GameState, prov: Province = province): void {
 				let share = updated;
 				// DC phase-out drift (D7): while no new DC contracts are taken,
 				// existing DC customers move to AC — but only when AC capacity
-				// is available and AC is strictly cheaper.
-				if (!dcAcceptingNew && acCheaper && inputs.acCapacityKw > 0) {
-					const migrate = Math.min(share.dc, growth.dcPhaseOutPerQuarter);
-					share = { dc: share.dc - migrate, ac: clamp01(share.ac + migrate) };
+				// is available, AC is strictly cheaper, and the AC pool has
+				// headroom for the migrated load.
+				if (!dcAcceptingNew && driftAllowed) {
+					const households = g.households[settlement.id];
+					if (households) {
+						// The pool headroom, as a fraction of AC capacity,
+						// bounds this quarter's migration share.
+						const shareLimit = acCapacityKw > 0 ? Math.min(1, (acCapacityKw - acPeakKw) / acCapacityKw) : 0;
+						const migrate = Math.min(share.dc, growth.dcPhaseOutPerQuarter, shareLimit);
+						share = { dc: share.dc - migrate, ac: clamp01(share.ac + migrate) };
+					}
 				}
 				g.shares[settlement.id][cat] = share;
 			}
 		}
 	}
 }
-
 /**
  * Yearly growth: runs after Q4 (from the tick wrapper when the *settled*
  * quarter was 4). Households multiply by (1 + base) scaled by the region's
