@@ -52,10 +52,12 @@ function giveUnderConstruction(state: GameState, plantId: number, componentId: s
 }
 
 describe('catalog', () => {
-	it('loads with one engine and one generator type', () => {
+	it('loads with one engine and two generator types (dc dynamo + ac alternator)', () => {
 		expect(buildings.engines.size).toBe(1);
-		expect(buildings.generators.size).toBe(1);
+		expect(buildings.generators.size).toBe(2);
 		expect(buildings.engines.get(ENGINE)!.generatorsDriven).toBe(3);
+		expect(buildings.generators.get('alternator-1892')!.currentType).toBe('ac');
+		expect(buildings.generators.get(GENERATOR)!.currentType).toBe('dc');
 	});
 
 	it('rejects a catalog with a negative cost naming the field', () => {

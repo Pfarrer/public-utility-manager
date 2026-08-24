@@ -2,7 +2,7 @@
 
 import { regionDemand } from './demand';
 import { tramLoadForRegion } from './events';
-import { buildings, plantAvailableCapacity } from './plant';
+import { buildings, plantAvailableCapacity, plantCapacityByType } from './plant';
 import type { Province } from './province';
 import { createRng } from './rng';
 import { province } from './scenario';
@@ -141,9 +141,17 @@ export function runDispatch(state: GameState, prov: Province = province): void {
 	for (const region of prov.regions) {
 		if (!region.unlocked) continue;
 		const curve = state.systems.demand.current[region.id] ?? [];
-		const capacityKw = state.systems.construction.plants
-			.filter((p) => p.regionId === region.id)
-			.reduce((sum, p) => sum + plantAvailableCapacity(p, buildings), 0);
+		const plants = state.systems.construction.plants.filter((p) => p.regionId === region.id);
+		const capacityKw = plants.reduce((sum, p) => sum + plantAvailableCapacity(p, buildings), 0);
+		const byType = plants.reduce(
+			(acc, p) => {
+				const t = plantCapacityByType(p, buildings);
+				acc.dc += t.dc;
+				acc.ac += t.ac;
+				return acc;
+			},
+			{ dc: 0, ac: 0 }
+		);
 		const priorityKw = tramLoadForRegion(state, region.id);
 		const result = dispatchQuarter(curve, capacityKw, priorityKw);
 		// dispatchQuarter accounts the representative 24-h day; the quarter
@@ -154,6 +162,8 @@ export function runDispatch(state: GameState, prov: Province = province): void {
 			year: state.clock.year,
 			quarter: state.clock.quarter,
 			capacityKw,
+			dcCapacityKw: byType.dc,
+			acCapacityKw: byType.ac,
 			peakKw: result.peakKw,
 			servedKwh: result.servedKwh * QUARTER_DAYS,
 			unservedKwh: result.unservedKwh * QUARTER_DAYS,

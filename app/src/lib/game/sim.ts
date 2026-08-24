@@ -24,7 +24,8 @@ export function createInitialState(seed = 0x1890): GameState {
 			dispatch: { current: {}, history: [], satisfaction: {} },
 			growth: initGrowth(),
 			economy: {
-				tariff: economyData.tariffDefault,
+				tariff: { dc: economyData.tariffDefault, ac: economyData.tariffDefault },
+				dcAcceptingNew: true,
 				transactions: [],
 				annualReports: [],
 				negativeCashQuarters: 0

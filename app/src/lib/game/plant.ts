@@ -106,6 +106,36 @@ export function plantInstalledCapacity(plant: Plant, catalog: BuildingCatalog = 
 }
 
 /**
+ * Installed capacity split by current type: operational generators backed by
+ * an operational engine, grouped by the generator's catalog `currentType`.
+ * Total capacity stays dc + ac (change: add-three-phase-power, D3a).
+ */
+export function plantCapacityByType(
+	plant: Plant,
+	catalog: BuildingCatalog = buildings
+): { dc: number; ac: number } {
+	let slots = 0;
+	for (const c of plant.components) {
+		if (c.status !== 'operational') continue;
+		const spec = catalog.engines.get(c.componentId);
+		if (spec) slots += spec.generatorsDriven;
+	}
+	let dc = 0;
+	let ac = 0;
+	for (const c of plant.components) {
+		if (slots <= 0) break;
+		if (c.status !== 'operational') continue;
+		const spec = catalog.generators.get(c.componentId);
+		if (spec) {
+			if (spec.currentType === 'ac') ac += spec.capacityKw;
+			else dc += spec.capacityKw;
+			slots -= 1;
+		}
+	}
+	return { dc, ac };
+}
+
+/**
  * Available capacity: the installed capacity of operational components —
  * full staffing implied (change: remove-employee-management).
  */

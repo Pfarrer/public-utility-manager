@@ -16,7 +16,18 @@
 			"cost": 5000,
 			"buildTime": 1,
 			"staffing": 2,
-			"capacityKw": 50
+			"capacityKw": 50,
+			"currentType": "dc"
+		},
+		{
+			"id": "alternator-1892",
+			"kind": "generator",
+			"name": "Alternator 50 kW (Drehstrom)",
+			"cost": 5000,
+			"buildTime": 1,
+			"staffing": 2,
+			"capacityKw": 50,
+			"currentType": "ac"
 		}
 	]
 }

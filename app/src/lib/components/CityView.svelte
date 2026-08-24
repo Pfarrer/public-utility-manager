@@ -115,13 +115,14 @@
 			const centroid = ringCentroid(ring);
 			const maxR = ringMaxRadius(ring);
 
-			// Household-weighted electrification share of this settlement.
+			// Household-weighted electrification share of this settlement,
+			// across both current types (change: add-three-phase-power).
 			const shares = game.systems.growth.shares[settlement.id];
 			let share = 0;
 			if (hh && shares) {
 				let connected = 0;
 				for (const cat of ['wealthy', 'average', 'poor'] as const) {
-					connected += hh[cat] * shares[cat];
+					connected += hh[cat] * (shares[cat].dc + shares[cat].ac);
 				}
 				share = total > 0 ? connected / total : 0;
 			}

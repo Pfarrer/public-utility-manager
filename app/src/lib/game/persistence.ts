@@ -5,13 +5,45 @@
  */
 import type { GameState } from './types';
 
-/** Bump on breaking state changes; M1 rejects old saves instead of migrating. */
-export const SAVE_VERSION = 3; // v3: staffing derived implicitly, no player-set crew
+/** Bump on breaking state changes; v3 saves migrate to v4 (add-three-phase-power). */
+export const SAVE_VERSION = 4; // v4: tariff pair, shares per current type, dcAcceptingNew
 export const SAVE_KEY = 'pum-save-v1';
 
 interface SaveFile {
 	version: number;
 	state: GameState;
+}
+
+/**
+ * Deterministic v3 → v4 migration (change: add-three-phase-power, D5):
+ * every generator is treated as DC (no component change needed — the catalog
+ * default is 'dc'), the single tariff becomes both the DC and AC tariff,
+ * every segment share becomes `{ dc: oldShare, ac: 0 }`, and
+ * `dcAcceptingNew` defaults to true.
+ */
+export function migrateSave(raw: SaveFile): SaveFile {
+	if (raw.version === 3) {
+		const state = raw.state as unknown as {
+			systems: {
+				economy: { tariff: number | { dc: number; ac: number }; dcAcceptingNew?: boolean };
+				growth: { shares: Record<string, Record<string, number | { dc: number; ac: number }>> };
+			};
+		};
+		const oldTariff =
+			typeof state.systems.economy.tariff === 'number' ? state.systems.economy.tariff : 0.3;
+		state.systems.economy.tariff = { dc: oldTariff, ac: oldTariff };
+		state.systems.economy.dcAcceptingNew = true;
+		for (const settlementId of Object.keys(state.systems.growth.shares)) {
+			const segments = state.systems.growth.shares[settlementId];
+			for (const cat of Object.keys(segments)) {
+				const old = segments[cat];
+				segments[cat] =
+					typeof old === 'number' ? { dc: old, ac: 0 } : { dc: old.dc, ac: old.ac };
+			}
+		}
+		return { version: 4, state: raw.state };
+	}
+	return raw;
 }
 
 /** localStorage in the browser; null anywhere else (node, sandboxed frames). */
@@ -72,9 +104,13 @@ export function loadGame(storage: Storage | null = defaultStorage()): GameState 
 		throw new Error(`Corrupt save data under "${SAVE_KEY}" — not valid JSON`);
 	}
 	if (parsed?.version !== SAVE_VERSION) {
-		throw new Error(
-			`Save version mismatch: save is v${String(parsed?.version)}, build expects v${SAVE_VERSION} — save rejected`
-		);
+		if (parsed?.version === 3) {
+			parsed = migrateSave(parsed);
+		} else {
+			throw new Error(
+				`Save version mismatch: save is v${String(parsed?.version)}, build expects v${SAVE_VERSION} — save rejected`
+			);
+		}
 	}
 	return parsed.state;
 }

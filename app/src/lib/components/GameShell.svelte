@@ -5,7 +5,7 @@
 	 */
 	import { tick as tickSim, createInitialState } from '$lib/game/sim';
 	import { decideTram, tramActive } from '$lib/game/events';
-	import { economy, setTariff } from '$lib/game/economy';
+	import { economy, setTariffCurrent } from '$lib/game/economy';
 	import { clearSave, saveGame } from '$lib/game/persistence';
 	import { money } from '$lib/ui/format';
 	import type { GameState, Newspaper, AnnualReport } from '$lib/game/types';
@@ -97,13 +97,34 @@
 
 	// Tariff control -----------------------------------------------------------
 	// svelte-ignore state_referenced_locally
-	let tariffInput = $state(game.systems.economy.tariff); // initial value once; restart resets via game
+	let tariffInput = $state(game.systems.economy.tariff.dc); // initial value once; restart resets via game
 	let tariffNote = $state('');
+	// svelte-ignore state_referenced_locally
+	let acTariffInput = $state(game.systems.economy.tariff.ac);
+	let acTariffNote = $state('');
+
 	function applyTariff(): void {
-		const before = game.systems.economy.tariff;
-		setTariff(game, tariffInput);
-		tariffInput = game.systems.economy.tariff;
-		tariffNote = tariffInput !== before ? `Tarif auf ${economy.tariffMin.toFixed(2)}–${economy.tariffMax.toFixed(2)}\u00A0$/kWh begrenzt` : '';
+		const before = game.systems.economy.tariff.dc;
+		setTariffCurrent(game, 'dc', tariffInput);
+		tariffInput = game.systems.economy.tariff.dc;
+		tariffNote =
+			tariffInput !== before
+				? `Tarif auf ${economy.tariffMin.toFixed(2)}–${economy.tariffMax.toFixed(2)}\u00A0$/kWh begrenzt`
+				: '';
+	}
+
+	function applyAcTariff(): void {
+		const before = game.systems.economy.tariff.ac;
+		setTariffCurrent(game, 'ac', acTariffInput);
+		acTariffInput = game.systems.economy.tariff.ac;
+		acTariffNote =
+			acTariffInput !== before
+				? `Tarif auf ${economy.tariffMin.toFixed(2)}–${economy.tariffMax.toFixed(2)}\u00A0$/kWh begrenzt`
+				: '';
+	}
+
+	function toggleDcAccepting(): void {
+		game.systems.economy.dcAcceptingNew = !game.systems.economy.dcAcceptingNew;
 	}
 
 	// Game loop: RAF accumulator ----------------------------------------------
@@ -172,6 +193,7 @@
 			<section class="panel">
 				<h3>Tarif</h3>
 				<label class="tariff">
+					<span class="tariff-label">⎓ Gleichstrom</span>
 					<input
 						type="range"
 						min={economy.tariffMin}
@@ -184,6 +206,37 @@
 					<span data-testid="tariff-value">{tariffInput.toFixed(2)}&nbsp;$/kWh</span>
 				</label>
 				{#if tariffNote}<p class="note" data-testid="tariff-note">{tariffNote}</p>{/if}
+
+				{#if game.clock.year >= 1892}
+					<label class="tariff">
+						<span class="tariff-label">~ Drehstrom</span>
+						<input
+							type="range"
+							min={economy.tariffMin}
+							max={economy.tariffMax}
+							step="0.05"
+							bind:value={acTariffInput}
+							onchange={applyAcTariff}
+							data-testid="ac-tariff-slider"
+						/>
+						<span data-testid="ac-tariff-value">{acTariffInput.toFixed(2)}&nbsp;$/kWh</span>
+					</label>
+					{#if acTariffNote}<p class="note" data-testid="ac-tariff-note">{acTariffNote}</p>{/if}
+					<label class="dc-toggle">
+						<input
+							type="checkbox"
+							checked={game.systems.economy.dcAcceptingNew}
+							onchange={toggleDcAccepting}
+							data-testid="dc-accepting-toggle"
+						/>
+						<span>Neue Gleichstrom-Kunden aufnehmen</span>
+					</label>
+					{#if !game.systems.economy.dcAcceptingNew}
+						<p class="note" data-testid="dc-phaseout-note">
+							Keine neuen ⎓-Verträge — Bestandskunden wechseln bei günstigerem ~-Tarif vierteljährlich.
+						</p>
+					{/if}
+				{/if}
 			</section>
 
 			<PlantPanel {game} onaction={() => (game = game)} />
@@ -267,6 +320,8 @@
 	.panel h3 { margin: 0 0 8px; font-size: 14px; }
 	.muted { color: #94a3b8; font-size: 12px; }
 	.tariff { display: flex; gap: 10px; align-items: center; font-size: 12px; }
+	.tariff-label { min-width: 90px; white-space: nowrap; }
+	.dc-toggle { display: flex; gap: 6px; align-items: center; font-size: 12px; margin-top: 6px; }
 	.tariff input[type='range'] { flex: 1; }
 	.note { color: #b45309; font-size: 11px; margin: 6px 0 0; }
 	.history { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }

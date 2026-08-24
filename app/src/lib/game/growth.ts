@@ -5,7 +5,7 @@ import growthJson from '$lib/data/growth.json';
 import { history, tramActive } from './events';
 import { WEALTH_CATEGORIES, type Province, type WealthCategory } from './province';
 import { province } from './scenario';
-import type { GameState, GrowthState } from './types';
+import type { GameState, GrowthState, SegmentShare } from './types';
 
 // ---------------------------------------------------------------------------
 // Balance data (JSON + valibot, fail-fast)
@@ -20,6 +20,8 @@ const GrowthSchema = v.object({
 	}),
 	adoptionRatePerQuarter: v.pipe(v.number(), v.minValue(0), v.maxValue(1)),
 	deadoptionRatePerQuarter: v.pipe(v.number(), v.minValue(0), v.maxValue(1)),
+	/** Quarterly DC→AC migration rate per segment while `dcAcceptingNew` is off (add-three-phase-power D7). */
+	dcPhaseOutPerQuarter: v.pipe(v.number(), v.minValue(0), v.maxValue(1)),
 	householdGrowthBasePerYear: v.pipe(v.number(), v.minValue(0)),
 	wealthDriftPerYear: v.pipe(v.number(), v.minValue(0), v.maxValue(1)),
 	driftSatisfactionThreshold: v.pipe(v.number(), v.minValue(0), v.maxValue(100))
@@ -51,34 +53,63 @@ const clamp01 = (x: number): number => Math.min(1, Math.max(0, x));
 // Adoption (quarterly)
 // ---------------------------------------------------------------------------
 
-/** Per-region quarterly adoption inputs. */
+/** Per-region quarterly adoption inputs, split by current type. */
 export interface AdoptionInputs {
 	blackout: boolean;
-	tariff: number;
+	/** DC tariff and AC tariff ($/kWh). */
+	tariff: { dc: number; ac: number };
 	satisfaction: number;
+	/** Operational AC capacity in the region (kW) — AC adoption needs headroom. */
+	acCapacityKw: number;
 }
 
 /**
- * Next share after one quarter, for one segment:
- * - grows while there is no blackout AND tariff ≤ segment willingness-to-pay
- * - stalls (unchanged) with only one bad factor
- * - with both bad factors it shrinks slightly (deadoption)
+ * Next share pair after one quarter, for one segment (change: add-three-phase-power):
+ * - total (dc + ac) grows while there is no blackout AND both side's
+ *   conditions hold for the side in question
+ * - DC grows while `dcAcceptingNew` is on (or stays), AC grows only with AC
+ *   capacity available and tariff.ac ≤ wtp
+ * - deadoption applies per side when its own conditions are bad
+ * - `dc + ac` stays ≤ 1
  */
 export function nextShare(
-	share: number,
+	share: SegmentShare,
 	inputs: AdoptionInputs,
 	wtp: number,
-	data: GrowthData = growth
-): number {
+	data: GrowthData = growth,
+	dcAcceptingNew = true
+): SegmentShare {
 	const reliable = !inputs.blackout;
-	const affordable = inputs.tariff <= wtp;
-	if (reliable && affordable) {
-		return clamp01(share + data.adoptionRatePerQuarter);
+	const dcAffordable = inputs.tariff.dc <= wtp;
+	const acAffordable = inputs.tariff.ac <= wtp;
+	const acAvailable = inputs.acCapacityKw > 0;
+
+	let dc = share.dc;
+	let ac = share.ac;
+
+	// AC side: needs its own capacity and affordable tariff; new customers
+	// pick the new current type first, within the shared headroom (dc + ac ≤ 1).
+	if (acAvailable && acAffordable && reliable) {
+		const headroom = Math.max(0, 1 - share.dc - share.ac);
+		ac = share.ac + Math.min(data.adoptionRatePerQuarter, headroom);
 	}
-	if (!reliable && !affordable) {
-		return clamp01(share - data.deadoptionRatePerQuarter);
+
+	// Deadoption on the AC side mirrors DC (unreliable + unaffordable).
+	if (!reliable && !acAffordable) {
+		ac = clamp01(ac - data.deadoptionRatePerQuarter);
 	}
-	return share;
+
+	// DC side: grows while new DC contracts are accepted, within what remains
+	// after AC's growth — and never shrinks from growth alone.
+	if (dcAcceptingNew) {
+		if (reliable && dcAffordable) {
+			dc = Math.min(share.dc + data.adoptionRatePerQuarter, Math.max(share.dc, 1 - ac));
+		} else if (!reliable && !dcAffordable) {
+			dc = clamp01(dc - data.deadoptionRatePerQuarter);
+		}
+	}
+
+	return { dc, ac };
 }
 
 // ---------------------------------------------------------------------------
@@ -99,15 +130,28 @@ export function runGrowth(state: GameState, prov: Province = province): void {
 		const inputs: AdoptionInputs = {
 			blackout: dispatch.blackout,
 			tariff: state.systems.economy.tariff,
-			satisfaction: state.systems.dispatch.satisfaction[region.id] ?? 50
+			satisfaction: state.systems.dispatch.satisfaction[region.id] ?? 50,
+			acCapacityKw: dispatch.acCapacityKw
 		};
+		const dcAcceptingNew = state.systems.economy.dcAcceptingNew;
+		const acCheaper = inputs.tariff.ac < inputs.tariff.dc;
 		for (const settlement of region.settlements) {
 			for (const cat of WEALTH_CATEGORIES) {
-				const current = g.shares[settlement.id]?.[cat] ?? 0;
+				const current = g.shares[settlement.id]?.[cat] ?? { dc: 0, ac: 0 };
 				const wtp = growth.willingnessToPay[cat];
-				const updated = nextShare(current, inputs, wtp);
-				if (!g.shares[settlement.id]) g.shares[settlement.id] = { wealthy: 0, average: 0, poor: 0 };
-				g.shares[settlement.id][cat] = updated;
+				const updated = nextShare(current, inputs, wtp, growth, dcAcceptingNew);
+				if (!g.shares[settlement.id]) {
+					g.shares[settlement.id] = { wealthy: { dc: 0, ac: 0 }, average: { dc: 0, ac: 0 }, poor: { dc: 0, ac: 0 } };
+				}
+				let share = updated;
+				// DC phase-out drift (D7): while no new DC contracts are taken,
+				// existing DC customers move to AC — but only when AC capacity
+				// is available and AC is strictly cheaper.
+				if (!dcAcceptingNew && acCheaper && inputs.acCapacityKw > 0) {
+					const migrate = Math.min(share.dc, growth.dcPhaseOutPerQuarter);
+					share = { dc: share.dc - migrate, ac: clamp01(share.ac + migrate) };
+				}
+				g.shares[settlement.id][cat] = share;
 			}
 		}
 	}
@@ -131,7 +175,8 @@ export function yearlyGrowth(state: GameState, prov: Province = province): void 
 			const households = g.households[settlement.id];
 			if (!households) continue;
 			for (const cat of WEALTH_CATEGORIES) {
-				weighted += households[cat] * (g.shares[settlement.id]?.[cat] ?? 0);
+				const share = g.shares[settlement.id]?.[cat] ?? { dc: 0, ac: 0 };
+				weighted += households[cat] * (share.dc + share.ac);
 				total += households[cat];
 			}
 		}
@@ -182,9 +227,9 @@ export function initGrowth(prov: Province = province): GrowthState {
 		for (const settlement of region.settlements) {
 			households[settlement.id] = structuredClone(settlement.households);
 			shares[settlement.id] = {
-				wealthy: growth.initialShare,
-				average: growth.initialShare,
-				poor: growth.initialShare
+				wealthy: { dc: growth.initialShare, ac: 0 },
+				average: { dc: growth.initialShare, ac: 0 },
+				poor: { dc: growth.initialShare, ac: 0 }
 			};
 		}
 	}

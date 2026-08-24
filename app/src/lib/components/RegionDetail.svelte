@@ -34,7 +34,7 @@
 			if (!hh || !shares) continue;
 			for (const cat of ['wealthy', 'average', 'poor'] as const) {
 				total += hh[cat];
-				connected += hh[cat] * shares[cat];
+				connected += hh[cat] * (shares[cat].dc + shares[cat].ac);
 			}
 		}
 		return total > 0 ? connected / total : 0;

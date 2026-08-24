@@ -55,6 +55,10 @@ export interface QuarterDispatch {
 	quarter: number;
 	/** Available generation (kW) — installed capacity across the region's plants. */
 	capacityKw: number;
+	/** DC portion of the available capacity (kW); total capacity stays dc + ac (change: add-three-phase-power). */
+	dcCapacityKw: number;
+	/** AC portion of the available capacity (kW). */
+	acCapacityKw: number;
 	/** Demand maximum of the representative day (kW). */
 	peakKw: number;
 	servedKwh: number;
@@ -78,12 +82,18 @@ export interface DispatchState {
 // Growth (change: add-regional-growth)
 // ---------------------------------------------------------------------------
 
+/** Electrification share per settlement id × wealth category, split by current type (change: add-three-phase-power). */
+export interface SegmentShare {
+	dc: number;
+	ac: number;
+}
+
 /** Living households + electrification shares, owned by the growth system. */
 export interface GrowthState {
 	/** Household counts per settlement id — starts as a copy of the scenario, mutated by yearly growth. */
 	households: Record<string, WealthSegments>;
-	/** Electrification share per settlement id × wealth category, within [0, 1]. */
-	shares: Record<string, Record<WealthCategory, number>>;
+	/** Electrification share per settlement id × wealth category, within [0, 1] (dc + ac ≤ 1). */
+	shares: Record<string, Record<WealthCategory, SegmentShare>>;
 }
 
 // ---------------------------------------------------------------------------
@@ -154,8 +164,10 @@ export interface AnnualReport {
 }
 
 export interface EconomyState {
-	/** Player tariff in $/kWh (set via `setTariff`, clamped to data bounds). */
-	tariff: number;
+	/** Player tariffs in $/kWh by current type (set via `setTariffCurrent`, clamped to data bounds). */
+	tariff: { dc: number; ac: number };
+	/** No new DC contracts while false (change: add-three-phase-power, D7). Default true. */
+	dcAcceptingNew: boolean;
 	/** Append-only ledger of all booked transactions. */
 	transactions: Transaction[];
 	/** One report per closed year, appended after the Q4 settlement. */

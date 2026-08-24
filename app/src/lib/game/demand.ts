@@ -4,6 +4,7 @@ import * as v from 'valibot';
 import profilesJson from '$lib/data/profiles.json';
 import { WEALTH_CATEGORIES, type Region, type WealthCategory, type WealthSegments } from './province';
 import { drawFloat, type RngState } from './rng';
+import type { SegmentShare } from './types';
 
 // ---------------------------------------------------------------------------
 // Profile math
@@ -183,8 +184,8 @@ export function regionDemand(
 		defs?: Profiles;
 		/** Living households per settlement id × category (growth system). */
 		households?: Record<string, WealthSegments>;
-		/** Electrification share per settlement id × category (growth system). */
-		shares?: Record<string, Record<WealthCategory, number>>;
+		/** Electrification share per settlement id × category (growth system; dc + ac summed for demand). */
+		shares?: Record<string, Record<WealthCategory, number | SegmentShare>>;
 	} = {}
 ): QuarterDemand {
 	const defs = options.defs ?? profiles;
@@ -192,7 +193,8 @@ export function regionDemand(
 	for (const settlement of region.settlements) {
 		for (const category of WEALTH_CATEGORIES) {
 			const living = options.households?.[settlement.id]?.[category] ?? settlement.households[category];
-			const share = options.shares?.[settlement.id]?.[category] ?? 1;
+			const raw = options.shares?.[settlement.id]?.[category] ?? 1;
+			const share = typeof raw === 'number' ? raw : raw.dc + raw.ac;
 			const connected = living * share;
 			if (connected <= 0) continue;
 			curves.push(householdGroupCurve(connected, category, drawJitter(rng, defs.jitter), defs));

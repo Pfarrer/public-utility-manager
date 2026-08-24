@@ -74,6 +74,8 @@ describe('CityView', () => {
 			year: 1890,
 			quarter: 1,
 			capacityKw: 0,
+			dcCapacityKw: 0,
+			acCapacityKw: 0,
 			peakKw: 100,
 			servedKwh: 0,
 			unservedKwh: 100 * 24 * 91,
