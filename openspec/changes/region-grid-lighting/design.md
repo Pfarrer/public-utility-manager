@@ -2,39 +2,39 @@
 
 ## Context
 
-Sim-Kern und Anzeige sind absichtlich getrennt: Der Kern aggregiert Nachfrage und Kapazität **pro Region** (`runDemand`/`runDispatch`), die Elektrifizierung läuft **pro Siedlung** (`GrowthState.shares[settlementId][segment]`). Die M2a-Stadtansicht rendert diese Wahrheit nur unvollständig: Licht existiert ausschließlich um den Anker eines laufenden, per Hash der Siedlung zugewiesenen Kraftwerks. Siedlungen ohne eigenes Kraftwerk bleiben damit visuell ewig dunkel.
+Sim core and display are deliberately separated: the core aggregates demand and capacity **per region** (`runDemand`/`runDispatch`), electrification runs **per settlement** (`GrowthState.shares[settlementId][segment]`). The M2a city view renders this truth only partially: light exists solely around the anchor of a running plant hash-assigned to the settlement. Settlements without their own plant stay visually dark forever.
 
 ## Goals / Non-Goals
 
 **Goals:**
-- Anzeige-Konsistenz: Licht = echter Elektrifizierungs-Anteil der Siedlung, gespeist aus dem Regions-Verbund.
-- Sichtbares Verbundnetz: animierte Verteilungslinien vom laufenden Kraftwerk zu jeder versorgten Siedlung.
-- Null Sim-Kern-Änderung, null Save-Änderung, null neue Spielmechanik.
+- Display consistency: light = the settlement's true electrification share, fed from the regional grid.
+- A visible grid: animated distribution lines from the running plant to every supplied settlement.
+- Zero sim core change, zero save change, zero new game mechanics.
 
 **Non-Goals:**
-- Leitungsbau als Spieler-Hebel (Kosten, Bauzeit, Topologie) — bewusst ausgeklammert; ein eigener späterer Change, wenn du Leitungen als Wirtschaftsgut willst.
-- Netz-Kapazitätsgrenzen oder Übertragungsverluste — es gibt weiterhin genau einen Regions-Dispatch.
-- Überregionale Verbünde.
+- Line building as a player lever (cost, lead time, topology) — deliberately out of scope; a separate later change if you want lines as an economic good.
+- Grid capacity limits or transmission losses — there remains exactly one region dispatch.
+- Inter-regional interconnection.
 
 ## Decisions
 
-**D1 — Netz-Zustand statt Werks-Präsenz.** Bedingung für Licht ist künftig: In der Region läuft mindestens ein betriebsbereites Kraftwerk (`plantAvailableCapacity > 0`, aggregiert über alle Kraftwerke der Region). Das ist exakt die Bedingung, unter der der Kern überhaupt bedient — die Anzeige hört auf, strenger zu sein als die Simulation.
+**D1 — Grid state instead of plant presence.** The condition for light becomes: at least one operational plant in the region (`plantAvailableCapacity > 0`, aggregated across the region's plants). That is exactly the condition under which the core serves demand at all — the display stops being stricter than the simulation.
 
-**D2 — Licht um das Siedlungszentrum, nicht um den Werksanker.** Der Glow-Kreis sitzt künftig am Siedlungs-Zentroid (Radius weiter √share·maxR, aufs Polygon geclippt). Begründung: Das Licht repräsentiert *haushaltsgewichtete Elektrifizierung*, und Haushalte wohnen im Ort, nicht im Kraftwerk. Das Kraftwerk-Icon bleibt an seinem Anker — Werk und Erleuchtung sind zwei Layer.
+**D2 — Light around the settlement center, not the plant anchor.** The glow circle now sits on the settlement centroid (radius still √share·maxR, clipped to the polygon). Rationale: the light represents *household-weighted electrification*, and households live in the settlement, not in the plant. The plant icon stays at its anchor — plant and illumination are two layers.
 
-**D3 — Verteilungslinien als Netz-Visualisierung.** Für jede Siedlung mit Lichtanteil > 0 läuft eine `flow`-Linie vom nächsten laufenden Kraftwerks-Anker zum Siedlungs-Zentroid (Animation per dash-offset wie bisher). Mehrere Werke: pro Siedlung das geometrisch nächstgelegene — deterministisch, ohne neue Daten. Siedlungen ohne adoptierte Haushalte (share ≈ 0) bekommen keine Linie: Kein Strom fließt, nichts zu zeichnen.
+**D3 — Distribution lines as the grid visualization.** For every settlement with a lit fraction > 0, a `flow` line runs from the nearest running plant anchor to the settlement centroid (animated via dash offset as before). Multiple plants: each settlement picks the geometrically nearest one — deterministic, no new data. Settlements without adopted households (share ≈ 0) get no line: no power flows, nothing to draw.
 
-**D4 — Keine neuen Daten, keine Migration.** Alle Informationen existieren im `GameState` (shares, households, plants, dispatch). `SAVE_VERSION` bleibt 3, alte Saves rendern sofort korrekt.
+**D4 — No new data, no migration.** All information already exists in the `GameState` (shares, households, plants, dispatch). `SAVE_VERSION` stays 3; old saves render correctly immediately.
 
 ## Risks / Trade-offs
 
-- **„Warum leuchtet das Dorf ohne Leitung?"** — Gegenfrage: Warum wächst sein Elektrifizierungs-Anteil ohne Leitung? Beides folgt derselben Abstraktion (Region = Netz). Wer echte Leitungen will, braucht den späteren Change; die Verteilungslinien machen die heutige Abstraktion wenigstens sichtbar.
-- **Nächstes-Werk-Auswahl bei mehreren Werken** kann bei hash-platzierten Ankern geometrisch unintuitiv wirken. Akzeptiert: Es ist Darstellung, nicht Topologie; bei echtem Leitungsbau wird dies ohnehin vom Spieler bestimmt.
+- **"Why does the village glow without a line?"** — Counter-question: why does its electrification share grow without a line? Both follow the same abstraction (region = network). Whoever wants real lines needs the later change; the distribution lines at least make today's abstraction visible.
+- **Nearest-plant selection with multiple plants** can look geometrically unintuitive with hash-placed anchors. Accepted: it is display, not topology; with real line building the player decides this anyway.
 
 ## Migration Plan
 
-Keine. Reiner Anzeige-Change; kein Save-Format, kein Datenmodell, kein Balancing berührt.
+None. Display-only change; no save format, no data model, no balancing touched.
 
 ## Open Questions
 
-- Keine. (Leitungsbau als Hebel bleibt als möglicher FolgeweChange notiert.)
+- None. (Line building as a lever remains noted as a possible follow-up change.)
