@@ -25,5 +25,5 @@
 
 ## 5. Verification
 - [x] 5.1 Suite green, svelte-check 0/0, clean build
-- [ ] 5.2 Browser campaign: 1891 newspaper reads, alternator buildable from 1892, AC adoption grows after a tariff cut
+- [x] 5.2 Browser campaign: 1891 newspaper reads, alternator buildable from 1892, AC adoption grows after a tariff cut
 - requires: app-scaffold
