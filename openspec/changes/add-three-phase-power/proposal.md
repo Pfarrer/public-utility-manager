@@ -1,25 +1,25 @@
 # Why
 
-Historisch war der Drehstrom-Durchbruch kein schleichender Trend, sondern ein datiertes Ereignis: die internationale Elektrotechnische Ausstellung Frankfurt 1891, wo Lauffen→Frankfurt 176 km Drehstrom bei ~75 % Wirkungsgrad übertrug (Oskar von Miller, Dolivo-Dobrowolsky/AEG + Oerlikon). Das Spiel startet 1890 — der Spieler erleidet den Durchbruch also **im Spielverlauf**. Bis dato erzeugen alle Werke Gleichstrom (Edisons Inselnetz-Ära). Der Wechsel zu Drehstrom soll spürbar werden: nicht als Schalter, sondern als parallel aufgebaute, neue Erzeugungskapazität, die ihre eigenen Kunden gewinnen muss.
+Historically, the three-phase breakthrough was not a creeping trend but a dated event: the 1891 International Electrotechnical Exhibition in Frankfurt, where Lauffen→Frankfurt transmitted three-phase power over 176 km at ~75% efficiency (Oskar von Miller, Dolivo-Dobrowolsky/AEG + Oerlikon). The game starts in 1890 — the player experiences the breakthrough **during play**. Until then all plants generate DC (Edison's island-grid era). The switch to three-phase should be felt: not as a toggle, but as new generation capacity built up in parallel, which must win its own customers.
 
-Gleichzeitig sichert change `add-power-origin-transparency` die Anzeige-Basis: Herkunftszeilen, Stromart-Badges und das Kunden-Mix-Panel existieren bereits — dieser Change füllt sie mit Mechanik.
+At the same time, change `add-power-origin-transparency` secures the display base: origin lines, current-type badges, and the customer mix panel already exist — this change fills them with mechanics.
 
 # What Changes
 
-- **Zeitungsartikel kündigt den Durchbruch an:** Die Historie-Daten erhalten (bereits vorhanden: „Wunder von Lauffen" 1891) eine erweiterte Meldung, die den Drehstrom-Durchbruch mit realen Bezügen verkündet. Der Artikel erscheint automatisch beim Jahreswechsel 1891→1892 im Spiel.
-- **Drehstrom-Generatoren werden baubar:** Nach dem Erscheinen des Artikels (ab 1892) bietet der Baukatalog einen Drehstrom-Generator (Alternator) an. Vorher ist er ausgegraut/nicht verfügbar. Dampfmaschinen bleiben Stromart-neutral (treiben beide Generatortypen).
-- **Stromart wird Spielersteuerung:** Jedes Werk kann parallel DC- und AC-Generatoren enthalten. `plant.currentType` existiert bereits als Anzeige-Feld; dieser Change macht die Stromart zur Eigenschaft des **Generators** (`componentId` entscheidet), nicht des Werks.
-- **Drehstrom hat eigenen Tarif:** Der Spieler legt neben dem DC-Tarif einen eigenen Drehstrom-Tarif fest ($/kWh, gleiche Clamp-Bounds). Kunden „entscheiden": AC-Adoption wächst nur, wenn AC-Kapazität verfügbar UND AC-Tarif ≤ Zahlungsbereitschaft des Segments.
-- **Kunden bleiben an ihrer Stromart:** Bestehende DC-Shares wandern nicht automatisch. AC-Shares wachsen von 0 an (eigene Adoption je Segment). Schwarzsichtbar im Kunden-Mix-Panel (Gliederung nach Stromart) und an den ⎓/~-Badges der Werke.
-- **Option „Keine neuen Gleichstromverträge":** Der Spieler kann die Annahme neuer DC-Kunden stoppen (historisch blieb DC parallel kaufbar — der Auslauf ist Spielerentscheidung). DC-Adoption friert ein; Bestandskunden wandern nur ab, wenn AC verfügbar UND günstiger ist (feste Quartalsrate, „Vertragsauslauf").
-- **Save-Format:** SAVE_VERSION → 4 mit Migration (Bestand: alle Generatoren DC, alle Shares DC zugeordnet).
+- **Newspaper article announces the breakthrough:** The history data receives (already present: "Wunder von Lauffen" 1891) an extended report proclaiming the three-phase breakthrough with real references. The article appears automatically at the 1891→1892 year boundary.
+- **Three-phase generators become buildable:** After the article appears (from 1892), the building catalog offers a three-phase generator (alternator). Before that it is grayed out / unavailable. Steam engines stay current-type neutral (they drive both generator types).
+- **Current type becomes player control:** Each plant can hold DC and AC generators in parallel. `plant.currentType` already exists as a display field; this change makes current type a property of the **generator** (`componentId` decides), not the plant.
+- **Three-phase gets its own tariff:** The player sets a separate three-phase tariff next to the DC tariff ($/kWh, same clamp bounds). Customers "decide": AC adoption grows only if AC capacity is available AND the AC tariff ≤ the segment's willingness to pay.
+- **Customers stay on their current type:** Existing DC shares do not migrate automatically. AC shares grow from 0 (their own adoption per segment). Visible in the customer mix panel (breakdown by current type) and on the plants' ⎓/~ badges.
+- **Option "no new DC contracts":** The player can stop accepting new DC customers (historically DC remained purchasable in parallel — the phase-out is a player decision). DC adoption freezes; existing customers churn only if AC is available AND cheaper (fixed quarterly rate, "contract run-off").
+- **Save format:** SAVE_VERSION → 4 with migration (stock: all generators DC, all shares assigned to DC).
 
 # Impact
 
-- `specs/game-events/spec.md` — MODIFIED „Annual newspaper with historical headlines" (1891er Lauffen-Meldung verkündet Drehstrom-Durchbruch)
-- `specs/power-plant/spec.md` — MODIFIED „Capacity derives from components" + „Expansion actions" (Drehstrom-Generator, Stromart am Generator)
-- `specs/regional-growth/spec.md` — MODIFIED „Adoption grows with reliable affordable supply" (AC-Adoption als eigener Prozess)
-- `specs/economy/spec.md` — MODIFIED „Revenue from served energy" (separater AC-Tarif)
-- `specs/game-ui/spec.md` — MODIFIED „Player controls work" (Drehstrom-Tarif-Slider) + „Customer mix panel" (Gliederung nach Stromart)
-- `specs/persistence/spec.md` — MODIFIED „Version guard" + „Roundtrip fidelity" (SAVE_VERSION 4, Migration)
-- Implementierung: `events.ts`/`history.json`, `buildings.json` (Alternator), `plant.ts` (Stromart je Komponente), `growth.ts` (getrennte DC/AC-Adoption), `economy.ts` (AC-Tarif), UI-Komponenten
+- `specs/game-events/spec.md` — MODIFIED "Annual newspaper with historical headlines" (the 1891 Lauffen report proclaims the three-phase breakthrough)
+- `specs/power-plant/spec.md` — MODIFIED "Capacity derives from components" + "Expansion actions" (three-phase generator, current type on the generator)
+- `specs/regional-growth/spec.md` — MODIFIED "Adoption grows with reliable affordable supply" (AC adoption as its own process)
+- `specs/economy/spec.md` — MODIFIED "Revenue from served energy" (separate AC tariff)
+- `specs/game-ui/spec.md` — MODIFIED "Player controls work" (three-phase tariff slider) + "Customer mix panel" (breakdown by current type)
+- `specs/persistence/spec.md` — MODIFIED "Version guard" + "Roundtrip fidelity" (SAVE_VERSION 4, migration)
+- Implementation: `events.ts`/`history.json`, `buildings.json` (alternator), `plant.ts` (current type per component), `growth.ts` (separate DC/AC adoption), `economy.ts` (AC tariff), UI components
